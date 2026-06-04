@@ -48,13 +48,13 @@ models/
 worker/storage/
 worker/jobs/
 
+# === Lokalne pliki designu / źródła referencyjne (nie commitujemy) ===
+*.cdr
+*.pdf
+/Layout/
+
 # === IDE / OS ===
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Local design/source assets
-*.cdr
-Layout/
-*.pdf

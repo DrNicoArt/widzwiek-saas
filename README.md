@@ -13,14 +13,26 @@ listą konkretnych błędów i ostrzeżeń do poprawy.
 
 ---
 
-## Stan projektu (PoC)
+## Tryby pipeline: mock vs api
 
-AI nie jest jeszcze zintegrowane. Repo zawiera **kompletny, działający przepływ** na **mock pipeline**,
-który symuluje wynik transkrypcji, rozpoznania mówców, detekcji dźwięków, formatowania, walidacji WCAG
-oraz eksportu SRT/VTT. Dzięki temu można pokazać docelowy produkt na demo, zanim podłączymy modele.
+Worker ma jeden przełącznik `PIPELINE_MODE`:
 
-Mocki są ukryte za interfejsami (`ASRProvider`, `DiarizationProvider`, `SoundEventProvider`),
-więc realne modele (Whisper itd.) podmienia się bez przepisywania reszty. Patrz [`docs/DECISIONS.md`](docs/DECISIONS.md).
+| Tryb | Co robi | Wymaga klucza API? | Zastosowanie |
+|------|---------|--------------------|--------------|
+| **mock** (domyślny) | symuluje cały przepływ na przykładowym materiale PL | **nie** | demo, praca nad UI, testy |
+| **api** | realna transkrypcja audio przez OpenAI; reszta etapów jak w mock | tak (`OPENAI_API_KEY`) | realne nagrania |
+
+Tryb **mock jest domyślny** i działa bez żadnych kluczy — brak `OPENAI_API_KEY` nie psuje demo.
+Pełna instrukcja trybu API: [`worker/README.md`](worker/README.md).
+
+### Co jest gotowe ✅
+Mock pipeline (pełny przepływ), kontrakt `CaptionDocument`, formatowanie napisów (≤42 zn., max 2 linie),
+walidacja WCAG 2.1 AA (raport TAK/NIE + lista problemów), eksport SRT/VTT, frontend demo (upload → status →
+podgląd → raport → pobieranie), branding (logotyp/sygnet) + favicon, realna transkrypcja przez OpenAI w trybie api.
+
+### Co jest TBD 🔜
+Diaryzacja mówców (na razie jeden mówca w trybie api), detekcja dźwięków niewerbalnych dla realnego audio,
+realny czas trwania przez ffprobe, live-test API (brak klucza), pełny UI refresh wg brandingu, deploy na Vercel.
 
 ---
 
@@ -37,11 +49,11 @@ Dwie warstwy, bo ciężkie AI/audio nie zmieści się w limitach Vercela:
 ```
 
 - **web/** — upload, status, podgląd transkrypcji/mówców/dźwięków, raport WCAG, pobieranie SRT/VTT. Gotowe pod Vercel.
-- **worker/** — pipeline: `ASR → diaryzacja → dźwięki → formatowanie napisów → walidacja WCAG → eksport`. Lokalnie lub na serwerze z GPU.
+- **worker/** — pipeline: `ASR → diaryzacja → dźwięki → formatowanie napisów → walidacja WCAG → eksport`. Tryb mock/api.
 - **contracts/** — `CaptionDocument` (JSON Schema) — wspólny kontrakt danych między etapami i między web↔worker.
-- **docs/** — architektura, kontrakt danych, decyzje techniczne, parametry WCAG, roadmapa.
+- **docs/** — architektura, kontrakt danych, decyzje techniczne, parametry WCAG, branding, roadmapa.
 
-Szczegóły: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) · [`docs/WCAG.md`](docs/WCAG.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md)
+Szczegóły: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) · [`docs/WCAG.md`](docs/WCAG.md) · [`docs/BRAND_UI_GUIDELINES.md`](docs/BRAND_UI_GUIDELINES.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
 ---
 
@@ -49,19 +61,19 @@ Szczegóły: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/DATA_CONTR
 
 Potrzebne: **Python 3.10+** i **Node.js 18+**. Dwa terminale.
 
-### 1) Worker (backend AI/pipeline) — terminal 1
+### 1) Worker (backend pipeline) — terminal 1
 
 ```powershell
 cd worker
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy ..\.env.example .env
+copy .env.example .env
 uvicorn widzwiek.main:app --reload --port 8000
 ```
 
-Sprawdzenie: otwórz http://localhost:8000/health → `{"status":"ok"}`.
-Dokumentacja API (Swagger): http://localhost:8000/docs
+Sprawdzenie: http://localhost:8000/health → `{"status":"ok", ...}` (pokazuje aktywne providery).
+Swagger: http://localhost:8000/docs. Domyślnie działa tryb **mock** (bez klucza API).
 
 ### 2) Web (frontend / demo) — terminal 2
 
@@ -72,19 +84,32 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Otwórz http://localhost:3000 — wgraj dowolny plik audio/wideo, kliknij **Przetwórz**,
-zobacz transkrypcję, mówców, dźwięki, raport WCAG i pobierz SRT/VTT.
+Otwórz http://localhost:3000 — wgraj plik audio/wideo, kliknij **Przetwórz**, zobacz transkrypcję,
+mówców, dźwięki, raport WCAG i pobierz SRT/VTT. W trybie mock wynik to spójny przykładowy materiał PL.
 
-> Na PoC pipeline jest mockiem — zwróci spójny przykładowy materiał PL niezależnie od wgranego pliku,
-> żeby zademonstrować pełny przepływ.
+### Tryb API (realna transkrypcja)
 
-### Szybki test samego workera (bez frontendu)
+W `worker/.env` ustaw `PIPELINE_MODE=api` oraz `OPENAI_API_KEY=...` i zrestartuj worker.
+Szczegóły, obsługa wideo (ffmpeg) i komunikaty błędów: [`worker/README.md`](worker/README.md).
+
+### Szybki test samego workera (bez frontendu, bez sieci)
 
 ```powershell
 cd worker
 .\.venv\Scripts\Activate.ps1
 pytest -q
-python -m widzwiek.demo   # wypisze SRT/VTT i raport WCAG dla przykładu
+python -m widzwiek.demo   # SRT/VTT + raport WCAG dla przykładu (tryb mock)
+```
+
+---
+
+## Walidacja (CI lokalne)
+
+```powershell
+# worker
+cd worker; .\.venv\Scripts\Activate.ps1; pytest -q
+# web
+cd web; npm run typecheck; npm run lint; npm run build
 ```
 
 ---
@@ -92,8 +117,8 @@ python -m widzwiek.demo   # wypisze SRT/VTT i raport WCAG dla przykładu
 ## Deploy demo na Vercel (później)
 
 Na Vercel wrzucamy **tylko `web/`** (Root Directory = `web`). Worker AI **nie** idzie na Vercel
-(limity czasu/RAM/dysku). Worker stawiamy osobno (lokalnie przez tunel, albo VPS/GPU) i podajemy
-jego adres przez zmienną `NEXT_PUBLIC_WORKER_URL`. Pełna instrukcja: [`docs/ROADMAP.md`](docs/ROADMAP.md#deploy-na-vercel).
+(limity czasu/RAM/dysku). Worker stawiamy osobno i podajemy adres przez `NEXT_PUBLIC_WORKER_URL`.
+Pełna instrukcja: [`docs/ROADMAP.md`](docs/ROADMAP.md#deploy-na-vercel).
 
 ---
 
@@ -102,12 +127,14 @@ jego adres przez zmienną `NEXT_PUBLIC_WORKER_URL`. Pełna instrukcja: [`docs/RO
 ```
 widzwiek/
 ├─ web/          # Next.js (TypeScript) — frontend/demo, Vercel-ready
-├─ worker/       # Python (FastAPI) — pipeline AI, WCAG, eksport SRT/VTT
+├─ worker/       # Python (FastAPI) — pipeline (mock/api), WCAG, eksport SRT/VTT
 ├─ contracts/    # JSON Schema kontraktu danych CaptionDocument
-├─ docs/         # architektura, kontrakt, decyzje, WCAG, roadmapa
+├─ docs/         # architektura, kontrakt, decyzje, WCAG, branding, roadmapa
 ├─ .env.example
 └─ .gitignore
 ```
+
+Sekrety trzymamy wyłącznie w `.env` (ignorowane przez git). W repo nie ma żadnych kluczy API.
 
 ---
 
