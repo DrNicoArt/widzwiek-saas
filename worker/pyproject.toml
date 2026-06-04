@@ -1,0 +1,13 @@
+[project]
+name = "widzwiek-worker"
+version = "0.1.0"
+description = "Widźwięk worker — pipeline AI, walidacja WCAG, eksport SRT/VTT (PoC)"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

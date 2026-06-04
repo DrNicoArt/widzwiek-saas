@@ -1,0 +1,55 @@
+# === Sekrety / env ===
+.env
+.env.local
+.env.*.local
+*.local
+
+# === Node / Next.js (web) ===
+node_modules/
+web/.next/
+web/out/
+web/build/
+web/.vercel/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# === Python (worker) ===
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# === Modele AI (NIE commitujemy) ===
+*.pt
+*.onnx
+*.bin
+*.ckpt
+*.safetensors
+models/
+
+# === Pliki mediów (NIE commitujemy ciężkich plików) ===
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.wav
+*.mp3
+*.m4a
+*.flac
+# wyjątek: drobne sample testowe trzymamy świadomie w worker/data/ (dodawaj per plik przez git add -f)
+
+# === Wyniki przetwarzania (runtime) ===
+worker/storage/
+worker/jobs/
+
+# === IDE / OS ===
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

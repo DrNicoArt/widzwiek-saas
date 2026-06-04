@@ -1,0 +1,308 @@
+{
+  "$defs": {
+    "Cue": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "index": {
+          "minimum": 1,
+          "title": "Index",
+          "type": "integer"
+        },
+        "start_ms": {
+          "minimum": 0,
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "end_ms": {
+          "minimum": 0,
+          "title": "End Ms",
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/CueKind"
+        },
+        "speaker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speaker Id"
+        },
+        "lines": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Lines",
+          "type": "array"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "index",
+        "start_ms",
+        "end_ms",
+        "kind",
+        "lines",
+        "text"
+      ],
+      "title": "Cue",
+      "type": "object"
+    },
+    "CueKind": {
+      "enum": [
+        "speech",
+        "sound"
+      ],
+      "title": "CueKind",
+      "type": "string"
+    },
+    "DocumentMeta": {
+      "properties": {
+        "generated_at": {
+          "title": "Generated At",
+          "type": "string"
+        },
+        "pipeline": {
+          "$ref": "#/$defs/PipelineMeta"
+        }
+      },
+      "title": "DocumentMeta",
+      "type": "object"
+    },
+    "MediaInfo": {
+      "properties": {
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "source_kind": {
+          "$ref": "#/$defs/SourceKind"
+        },
+        "duration_ms": {
+          "minimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        },
+        "language": {
+          "default": "pl",
+          "title": "Language",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filename",
+        "source_kind",
+        "duration_ms"
+      ],
+      "title": "MediaInfo",
+      "type": "object"
+    },
+    "PipelineMeta": {
+      "properties": {
+        "asr": {
+          "default": "mock",
+          "title": "Asr",
+          "type": "string"
+        },
+        "diarization": {
+          "default": "mock",
+          "title": "Diarization",
+          "type": "string"
+        },
+        "sound_events": {
+          "default": "mock",
+          "title": "Sound Events",
+          "type": "string"
+        }
+      },
+      "title": "PipelineMeta",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "error",
+        "warning",
+        "info"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SourceKind": {
+      "enum": [
+        "audio",
+        "video"
+      ],
+      "title": "SourceKind",
+      "type": "string"
+    },
+    "Speaker": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "color": {
+          "default": "white",
+          "title": "Color",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "Speaker",
+      "type": "object"
+    },
+    "WcagIssue": {
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "cue_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cue Id"
+        },
+        "field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "title": "WcagIssue",
+      "type": "object"
+    },
+    "WcagReport": {
+      "properties": {
+        "target": {
+          "default": "WCAG 2.1 AA",
+          "title": "Target",
+          "type": "string"
+        },
+        "compliant": {
+          "default": false,
+          "title": "Compliant",
+          "type": "boolean"
+        },
+        "generated_at": {
+          "title": "Generated At",
+          "type": "string"
+        },
+        "stats": {
+          "$ref": "#/$defs/WcagStats"
+        },
+        "issues": {
+          "items": {
+            "$ref": "#/$defs/WcagIssue"
+          },
+          "title": "Issues",
+          "type": "array"
+        }
+      },
+      "title": "WcagReport",
+      "type": "object"
+    },
+    "WcagStats": {
+      "properties": {
+        "cue_count": {
+          "default": 0,
+          "title": "Cue Count",
+          "type": "integer"
+        },
+        "error_count": {
+          "default": 0,
+          "title": "Error Count",
+          "type": "integer"
+        },
+        "warning_count": {
+          "default": 0,
+          "title": "Warning Count",
+          "type": "integer"
+        }
+      },
+      "title": "WcagStats",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "media": {
+      "$ref": "#/$defs/MediaInfo"
+    },
+    "speakers": {
+      "items": {
+        "$ref": "#/$defs/Speaker"
+      },
+      "title": "Speakers",
+      "type": "array"
+    },
+    "cues": {
+      "items": {
+        "$ref": "#/$defs/Cue"
+      },
+      "title": "Cues",
+      "type": "array"
+    },
+    "wcag": {
+      "$ref": "#/$defs/WcagReport"
+    },
+    "meta": {
+      "$ref": "#/$defs/DocumentMeta"
+    }
+  },
+  "required": [
+    "media"
+  ],
+  "title": "CaptionDocument",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
