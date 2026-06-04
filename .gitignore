@@ -58,3 +58,4 @@ worker/jobs/
 .idea/
 .DS_Store
 Thumbs.db
+web/tsconfig.tsbuildinfo

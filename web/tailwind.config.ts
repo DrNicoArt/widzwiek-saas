@@ -5,11 +5,39 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: { DEFAULT: "#1f6feb", dark: "#0b3d91" },
+        brand: {
+          50: "#EAF2FB", 100: "#D6E6F7", 200: "#AECEEF", 300: "#7FB0E4",
+          400: "#4E8FD6", 500: "#1F6FBE", 600: "#0057A8", 700: "#084C8D",
+          800: "#0B3E70", 900: "#073763",
+        },
+        ice: "#F7FAFD",
+        graphite: "#151515",
+        muted: "#5F6670",
+        hair: "#DDE5EE",
+        ok: "#1F7A4D",
+        warn: "#B7791F",
+        err: "#B42318",
+        spk: {
+          blue: "#2563EB", amber: "#D97706", teal: "#0D9488",
+          violet: "#7C3AED", rose: "#E11D48",
+        },
       },
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "sans-serif"],
+      },
+      borderRadius: { xl: "14px", "2xl": "18px" },
+      boxShadow: {
+        card: "0 1px 2px rgba(7,55,99,0.04), 0 8px 24px -12px rgba(7,55,99,0.14)",
+        lift: "0 6px 16px -6px rgba(7,55,99,0.18), 0 18px 40px -18px rgba(7,55,99,0.22)",
+        ring: "0 0 0 4px rgba(0,87,168,0.14)",
+      },
+      keyframes: {
+        shimmer: { "100%": { transform: "translateX(100%)" } },
+        floaty: { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-6px)" } },
+      },
+      animation: { shimmer: "shimmer 1.4s infinite", floaty: "floaty 6s ease-in-out infinite" },
     },
   },
   plugins: [],
 };
-
 export default config;
