@@ -1,7 +1,8 @@
 "use client";
+// Cockpit sidebar — oficjalny logotyp, nawigacja z aktywnym stanem, OFICJALNY sygnet
+// jako duży półprzezroczysty watermark, status workera.
 import { motion } from "framer-motion";
-import EyeMark from "@/components/brand/EyeMark";
-import Wordmark from "@/components/brand/Wordmark";
+import BrandLogo from "@/components/brand/BrandLogo";
 import Icon, { type IconName } from "@/components/ui/Icon";
 import { StatusDot } from "@/components/ui/Badge";
 
@@ -18,46 +19,36 @@ const NAV: Item[] = [
 
 export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
   return (
-    <aside className="relative hidden w-64 shrink-0 flex-col border-r border-hair bg-white/70 backdrop-blur-md lg:flex">
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <EyeMark size={26} pulse={false} />
-        <Wordmark className="text-lg" />
-      </div>
+    <aside className="relative hidden w-[248px] shrink-0 flex-col overflow-hidden border-r border-hair/70 bg-white/55 backdrop-blur-xl lg:flex">
+      <div className="px-5 py-6"><BrandLogo height={24} /></div>
 
-      <nav className="mt-2 flex-1 px-3">
+      <nav className="relative z-10 mt-1 flex-1 px-3">
         {NAV.map((it) => (
           <button
-            key={it.label}
-            aria-current={it.active ? "page" : undefined}
-            disabled={it.soon}
+            key={it.label} aria-current={it.active ? "page" : undefined} disabled={it.soon}
             title={it.soon ? "Wkrótce" : undefined}
             className={[
-              "focusring group mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
-              it.active
-                ? "bg-brand-50 font-medium text-brand-700"
-                : it.soon
-                ? "text-muted/60 hover:bg-slate-50"
-                : "text-graphite hover:bg-brand-50",
+              "relative mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focusring",
+              it.active ? "bg-brand-50/80 font-medium text-brand-700"
+                : it.soon ? "text-muted/55 hover:bg-white/60" : "text-graphite hover:bg-brand-50/60",
             ].join(" ")}
           >
-            {it.active && (
-              <motion.span layoutId="navactive" className="absolute left-0 h-7 w-1 rounded-r bg-brand-600" />
-            )}
+            {it.active && <motion.span layoutId="navactive" className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r bg-brand-600" />}
             <Icon name={it.icon} size={19} className={it.active ? "text-brand-600" : "text-muted"} />
             <span className="flex-1 text-left">{it.label}</span>
-            {it.soon && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-muted">wkrótce</span>}
+            {it.soon && <span className="rounded bg-slate-100/80 px-1.5 py-0.5 text-[10px] text-muted">wkrótce</span>}
           </button>
         ))}
       </nav>
 
-      <div aria-hidden className="pointer-events-none absolute -left-6 bottom-24 opacity-[0.06]">
-        <EyeMark size={190} pulse={false} />
-      </div>
+      {/* OFICJALNY sygnet jako watermark systemu */}
+      <img src="/brand/sygnet.svg" alt="" aria-hidden draggable={false}
+        className="pointer-events-none absolute -bottom-6 -left-10 w-[150%] max-w-none opacity-[0.06]" />
 
-      <div className="border-t border-hair px-5 py-4">
-        <div className="rounded-xl bg-brand-50/60 px-3 py-2.5">
+      <div className="relative z-10 border-t border-hair/70 px-5 py-4">
+        <div className="rounded-xl bg-white/60 px-3 py-2.5 ring-1 ring-hair/60">
           <StatusDot tone={workerUp === false ? "err" : workerUp ? "ok" : "neutral"}
-            label={workerUp === false ? "worker offline" : workerUp ? "worker online" : "łączenie…"} />
+            label={workerUp === false ? "worker offline" : workerUp ? "system online" : "łączenie…"} />
           <p className="mt-1 text-[11px] text-muted">Widźwięk Pracownia · PoC</p>
         </div>
       </div>

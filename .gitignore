@@ -60,4 +60,5 @@ worker/jobs/
 Thumbs.db
 web/tsconfig.tsbuildinfo
 
-# TS
+# TS build info
+*.tsbuildinfo
