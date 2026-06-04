@@ -1,11 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --brand: #0057A8;
-  --navy: #073763;
-}
+:root { --brand: #0057A8; --navy: #073763; }
 
 * { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
