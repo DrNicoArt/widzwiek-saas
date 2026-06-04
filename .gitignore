@@ -53,3 +53,8 @@ worker/jobs/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local design/source assets
+*.cdr
+Layout/
+*.pdf
