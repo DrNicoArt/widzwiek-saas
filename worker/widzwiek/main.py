@@ -12,6 +12,7 @@ from typing import Optional
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel
 
 from .api_check import readiness
 from .config import settings
@@ -23,7 +24,7 @@ from .pipeline.providers import select_providers
 app = FastAPI(
     title="Widźwięk Worker",
     description="Pipeline AI + walidacja WCAG + eksport SRT/VTT. Tryb mock (demo) / api.",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 app.add_middleware(
@@ -34,9 +35,7 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
-def health() -> dict:
-    """Liveness + tryb + realne providery + gotowość trybu API (offline, bez wywołań sieci)."""
+def _health_dict() -> dict:
     p = select_providers(settings)
     r = readiness(settings)
     return {
@@ -46,21 +45,46 @@ def health() -> dict:
         "api_key_present": r["api_key_present"],
         "openai_installed": r["openai_installed"],
         "ffmpeg_present": r["ffmpeg_present"],
-        "providers": {
-            "asr": p.asr.name,
-            "diarization": p.diarization.name,
-            "sound_events": p.sound_events.name,
-        },
+        "transcription_model": settings.openai_transcription_model,
+        "providers": {"asr": p.asr.name, "diarization": p.diarization.name, "sound_events": p.sound_events.name},
         "notes": r["notes"],
     }
 
 
+@app.get("/health")
+def health() -> dict:
+    """Liveness + tryb + realne providery + gotowość API (offline, bez wywołań sieci)."""
+    return _health_dict()
+
+
+class ConfigUpdate(BaseModel):
+    pipeline_mode: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    openai_transcription_model: Optional[str] = None
+
+
+@app.post("/api/config")
+def update_config(cfg: ConfigUpdate) -> dict:
+    """Ustawia konfigurację w PAMIĘCI procesu workera (klucz/tryb/model).
+
+    Sekret NIE jest zapisywany na dysk ani w repo — żyje tylko do restartu workera.
+    Zwraca /health, więc UI od razu widzi nowy stan i gotowość.
+    """
+    if cfg.pipeline_mode is not None:
+        m = cfg.pipeline_mode.strip().lower()
+        if m not in ("mock", "api"):
+            raise HTTPException(status_code=400, detail="PIPELINE_MODE musi być 'mock' albo 'api'.")
+        settings.pipeline_mode = m
+    if cfg.openai_api_key is not None:
+        settings.openai_api_key = cfg.openai_api_key.strip()
+    if cfg.openai_transcription_model is not None and cfg.openai_transcription_model.strip():
+        settings.openai_transcription_model = cfg.openai_transcription_model.strip()
+    return _health_dict()
+
+
 @app.post("/api/jobs", response_model=Job)
 async def create_job(file: UploadFile = File(...)) -> Job:
-    """Upload pliku audio/wideo -> utworzenie joba i uruchomienie pipeline'u.
-
-    Tryb mock kończy synchronicznie (szybko). Kontrakt statusów gotowy pod realne, długie AI.
-    """
+    """Upload pliku audio/wideo -> utworzenie joba i uruchomienie pipeline'u."""
     job = store.create(filename=file.filename or "upload")
 
     audio_path: Optional[str] = None
