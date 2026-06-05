@@ -1,5 +1,5 @@
-// DEMO DATA (UI) — dane przykładowe dla ekranów, których mock worker jeszcze nie zwraca
-// (biblioteka projektów, statystyki). Wyraźnie oznaczone; kontrakt CaptionDocument bez zmian.
+// DEMO DATA (UI) — dane przykładowe dla ekranów (biblioteka, statystyki). Wyraźnie oznaczone
+// jako warstwa demonstracyjna; zgodne z duchem kontraktu. Nie udają live API.
 export const IS_DEMO_DATA = true;
 
 export type ProjectStatus = "done" | "processing" | "review";
@@ -9,9 +9,9 @@ export interface DemoProject {
   title: string;
   durationLabel: string;
   status: ProjectStatus;
-  wcag: number;          // % zgodności (demo)
+  wcag: number;
   updated: string;
-  accent: string;        // kolor okładki
+  accent: string;
 }
 
 export const DEMO_PROJECTS: DemoProject[] = [
@@ -23,9 +23,10 @@ export const DEMO_PROJECTS: DemoProject[] = [
   { id: "p6", title: "Prezentacja wyników badań", durationLabel: "24:18", status: "review", wcag: 74, updated: "5 dni temu", accent: "#1F6FBE" },
 ];
 
+// icon: nazwy z zestawu @/components/ui/Icon
 export const DEMO_STATS = [
-  { label: "Wszystkie projekty", value: 24, icon: "ti-folders" },
-  { label: "W toku", value: 3, icon: "ti-loader" },
-  { label: "Zgodne z WCAG", value: 18, icon: "ti-circle-check" },
-  { label: "Do poprawy", value: 3, icon: "ti-alert-triangle" },
+  { label: "Wszystkie projekty", value: 24, icon: "folder" },
+  { label: "W toku", value: 3, icon: "clock" },
+  { label: "Zgodne z WCAG", value: 18, icon: "checkCircle" },
+  { label: "Do poprawy", value: 3, icon: "alert" },
 ];
