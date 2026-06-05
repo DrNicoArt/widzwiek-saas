@@ -1,7 +1,7 @@
 "use client";
 // /app — Pracownia: pełny flow demo. upload → processing → transkrypcja → napisy →
 // mówcy+dźwięki → raport WCAG → eksport → status demo. Dane z mock pipeline (CaptionDocument).
-// Bez zmian backendu/kontraktu, bez live API. Tryb mock domyślny.
+// Jedna strefa uploadu (sekcja Materiał). Bez zmian backendu/kontraktu, bez live API.
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { createJob, getJob } from "@/lib/api";
@@ -49,11 +49,9 @@ export default function Pracownia() {
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const studioRef = useRef<HTMLDivElement>(null);
   const busy = phase === "uploading" || phase === "processing";
 
   function pick() { inputRef.current?.click(); }
-  function goStudio() { studioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }
 
   async function handleRun() {
     if (!file) return;
@@ -75,11 +73,11 @@ export default function Pracownia() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      {/* Hero pracowni */}
+      {/* Hero pracowni — intro (bez uploadu; upload jest w sekcji Materiał poniżej) */}
       <Section className="mb-10">
         <div className="relative overflow-hidden rounded-3xl border border-hair/70 bg-white/55 p-8 shadow-card backdrop-blur-xl md:p-10">
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 opacity-70"><WaveformField live={workerUp !== false} baseOpacity={0.10} height={180} /></div>
-          <img src="/brand/sygnet.svg" alt="" aria-hidden draggable={false} className="pointer-events-none absolute -right-10 -top-10 w-[40%] max-w-[420px] opacity-[0.06]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 opacity-70"><WaveformField live={workerUp !== false} baseOpacity={0.10} height={160} /></div>
+          <img src="/brand/sygnet.svg" alt="" aria-hidden draggable={false} className="pointer-events-none absolute -right-10 -top-10 w-[36%] max-w-[380px] opacity-[0.06]" />
           <div className="relative grid items-center gap-8 md:grid-cols-[1.3fr_1fr]">
             <motion.div variants={stagger} initial="hidden" animate="show">
               <motion.div variants={fadeUp} className="mb-3 flex flex-wrap gap-2">
@@ -88,9 +86,13 @@ export default function Pracownia() {
               </motion.div>
               <motion.h2 variants={fadeUp} className="text-2xl font-medium tracking-tight text-graphite md:text-3xl">Pracownia napisów</motion.h2>
               <motion.p variants={fadeUp} className="mt-1 max-w-xl text-sm text-muted">
-                Wgraj plik audio/wideo. Mock pokazuje pełny przepływ — transkrypcja, mówcy, dźwięki, raport WCAG i eksport — bez żadnych zewnętrznych API.
+                Wgraj plik audio/wideo w sekcji poniżej. Mock pokazuje pełny przepływ — transkrypcja, mówcy,
+                dźwięki, raport WCAG i eksport — bez żadnych zewnętrznych API.
               </motion.p>
-              <motion.div variants={fadeUp} className="mt-6"><Button icon="upload" onClick={() => { goStudio(); setTimeout(pick, 350); }}>Wgraj materiał</Button></motion.div>
+              <motion.div variants={fadeUp} className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-brand-700">
+                <Icon name="upload" size={16} /> Zacznij od sekcji Materiał 
+                <Icon name="chevron" size={15} className="rotate-90" />
+              </motion.div>
             </motion.div>
             <motion.div variants={fadeUp} initial="hidden" animate="show" className="hidden justify-self-center md:block">
               <div className="relative grid h-40 w-40 place-items-center">
@@ -112,8 +114,8 @@ export default function Pracownia() {
         </motion.div>
       </Section>
 
-      <div ref={studioRef} className="scroll-mt-24 space-y-8">
-        {/* Upload */}
+      <div className="space-y-8">
+        {/* Materiał — JEDYNA strefa uploadu */}
         <Section>
           <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl border border-hair/70 bg-white/65 p-6 shadow-card backdrop-blur-sm">
             <SectionLabel n={1}>Materiał</SectionLabel>
@@ -145,7 +147,6 @@ export default function Pracownia() {
           </motion.div>
         </Section>
 
-        {/* Processing */}
         {phase !== "idle" && (
           <Section><motion.div variants={fadeUp}><SectionLabel n={2}>Przetwarzanie</SectionLabel><ProcessingPipeline activeIndex={ps.active} progress={ps.progress} error={ps.error} /></motion.div></Section>
         )}
