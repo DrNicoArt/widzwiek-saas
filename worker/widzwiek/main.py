@@ -13,6 +13,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 
+from .api_check import readiness
 from .config import settings
 from .contracts import Job
 from .export import to_srt, to_vtt
@@ -22,7 +23,7 @@ from .pipeline.providers import select_providers
 app = FastAPI(
     title="Widźwięk Worker",
     description="Pipeline AI + walidacja WCAG + eksport SRT/VTT. Tryb mock (demo) / api.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -35,19 +36,22 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict:
-    """Liveness + aktywny tryb pipeline'u i realne nazwy providerów (bez wymogu klucza API)."""
+    """Liveness + tryb + realne providery + gotowość trybu API (offline, bez wywołań sieci)."""
     p = select_providers(settings)
-    api_ready = settings.pipeline_mode != "api" or bool(settings.openai_api_key)
+    r = readiness(settings)
     return {
         "status": "ok",
-        "mode": settings.pipeline_mode,
-        "api_key_present": bool(settings.openai_api_key),
-        "ready": api_ready,
+        "mode": r["mode"],
+        "ready": r["ready"],
+        "api_key_present": r["api_key_present"],
+        "openai_installed": r["openai_installed"],
+        "ffmpeg_present": r["ffmpeg_present"],
         "providers": {
             "asr": p.asr.name,
             "diarization": p.diarization.name,
             "sound_events": p.sound_events.name,
         },
+        "notes": r["notes"],
     }
 
 
@@ -55,7 +59,7 @@ def health() -> dict:
 async def create_job(file: UploadFile = File(...)) -> Job:
     """Upload pliku audio/wideo -> utworzenie joba i uruchomienie pipeline'u.
 
-    Tryb mock kończy synchronicznie (szybko). Kontrakt statusów jest gotowy pod realne, długie AI.
+    Tryb mock kończy synchronicznie (szybko). Kontrakt statusów gotowy pod realne, długie AI.
     """
     job = store.create(filename=file.filename or "upload")
 
