@@ -1,18 +1,16 @@
-# Widźwięk worker — zależności
+# Widźwięk worker — zależności (tryb demo MOCK działa bez kluczy i bez SDK zewnętrznych API)
 fastapi>=0.110,<1.0
 uvicorn[standard]>=0.27,<1.0
 pydantic>=2.6,<3.0
 python-multipart>=0.0.9        # obsługa upload (multipart/form-data)
 
-# Tryb API (PIPELINE_MODE=api) — realna transkrypcja
-openai>=1.0                    # OpenAI audio transcriptions
-# Wideo: do ekstrakcji audio zainstaluj ffmpeg w systemie i dodaj do PATH.
-# Bez ffmpeg wideo jest wysyłane bezpośrednio do API (limit 25 MB).
-
-# Dev / testy
+# Dev / testy (nie wymagają żadnych kluczy ani sieci)
 pytest>=8.0,<9.0
 httpx>=0.27,<1.0               # TestClient FastAPI
 
-# --- TBD: dalsza integracja AI (kolejne etapy) ---
-# faster-whisper>=1.0          # ASR lokalnie (alternatywa dla API)
-# pyannote.audio>=3.1          # diaryzacja (wymaga tokenu HF)
+# === Placeholdery integracji zewnętrznych (odkomentuj przy włączaniu danego trybu) ===
+# PIPELINE_MODE=api — transkrypcja przez OpenAI (import leniwy; brak pakietu => czytelny błąd):
+# openai>=1.0
+# Wideo w trybie api: ekstrakcja audio przez ffmpeg (zainstaluj w systemie, dodaj do PATH).
+# Diaryzacja (TBD): pyannote.audio>=3.1 (wymaga tokenu Hugging Face).
+# ASR lokalnie (alternatywa dla API, TBD): faster-whisper>=1.0

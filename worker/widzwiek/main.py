@@ -17,11 +17,12 @@ from .config import settings
 from .contracts import Job
 from .export import to_srt, to_vtt
 from .jobs import store
+from .pipeline.providers import select_providers
 
 app = FastAPI(
     title="Widźwięk Worker",
-    description="Pipeline AI + walidacja WCAG + eksport SRT/VTT. PoC (mock).",
-    version="0.1.0",
+    description="Pipeline AI + walidacja WCAG + eksport SRT/VTT. Tryb mock (demo) / api.",
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -34,23 +35,30 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "providers": {
-        "asr": settings.asr_provider,
-        "diarization": settings.diarization_provider,
-        "sound_events": settings.sound_provider,
-    }}
+    """Liveness + aktywny tryb pipeline'u i realne nazwy providerów (bez wymogu klucza API)."""
+    p = select_providers(settings)
+    api_ready = settings.pipeline_mode != "api" or bool(settings.openai_api_key)
+    return {
+        "status": "ok",
+        "mode": settings.pipeline_mode,
+        "api_key_present": bool(settings.openai_api_key),
+        "ready": api_ready,
+        "providers": {
+            "asr": p.asr.name,
+            "diarization": p.diarization.name,
+            "sound_events": p.sound_events.name,
+        },
+    }
 
 
 @app.post("/api/jobs", response_model=Job)
 async def create_job(file: UploadFile = File(...)) -> Job:
     """Upload pliku audio/wideo -> utworzenie joba i uruchomienie pipeline'u.
 
-    PoC: pipeline jest mockiem (szybki), więc przetwarzamy synchronicznie i
-    zwracamy gotowy wynik. Kontrakt statusów jest gotowy pod realne, długie AI.
+    Tryb mock kończy synchronicznie (szybko). Kontrakt statusów jest gotowy pod realne, długie AI.
     """
     job = store.create(filename=file.filename or "upload")
 
-    # zapis uploadu do pliku tymczasowego (mock go nie czyta, ale realne AI będzie)
     audio_path: Optional[str] = None
     try:
         suffix = os.path.splitext(file.filename or "")[1]

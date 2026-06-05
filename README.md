@@ -1,68 +1,65 @@
 # Widźwięk
 
 > Zobacz to, co inni słyszą.
-> Automatyczne napisy **zgodne z WCAG 2.1 AA** dla polskiego audio i wideo.
-> Projekt grupy **SubrosAI** — etap **PoC przed MVP**.
+> Webowa aplikacja SaaS do tworzenia **napisów dostępnościowych zgodnych z WCAG 2.1 AA**
+> dla polskiego audio i wideo. Projekt grupy **SubrosAI**.
 
-Widźwięk to nie zwykła transkrypcja. To narzędzie do **captions dostępnościowych**:
-treść mowy + identyfikacja mówców + opisy dźwięków niewerbalnych (`[oklaski]`, `[muzyka]`,
-`[pukanie]`) + poprawne formatowanie + timing + eksport **SRT/VTT** + **raport zgodności WCAG**.
+Widźwięk to nie zwykła transkrypcja, lecz narzędzie do **captions dostępnościowych**: treść mowy +
+identyfikacja mówców + opisy dźwięków niewerbalnych (`[oklaski]`, `[muzyka]`, `[pukanie]`) +
+formatowanie i timing + eksport **SRT/VTT** + **raport zgodności WCAG (TAK/NIE + lista problemów)**.
 
-Najważniejsza funkcja biznesowa to raport: **„Materiał spełnia WCAG 2.1 AA: TAK/NIE"** wraz z
-listą konkretnych błędów i ostrzeżeń do poprawy.
+To repo to **Demo Stable** — działa w całości lokalnie, w trybie **mock**, **bez żadnych kluczy API**.
+
+---
+
+## Co działa w demo (mock)
+
+Uruchamiasz worker + frontend, wchodzisz do aplikacji, wgrywasz audio/wideo (lub odpalasz
+symulowany przepływ) i dostajesz: status przetwarzania → przykładową transkrypcję → segmenty napisów,
+mówców i dźwięki (dane demonstracyjne) → **raport WCAG** → pobranie **SRT i VTT**. Tryb mock jest
+pełnoprawnym trybem prezentacyjnym, nie obejściem awaryjnym.
+
+Wszystkie integracje zewnętrzne (OpenAI, diaryzacja, dźwięki, storage, auth, PDF, cloud) są
+**placeholderami/adapterami** — patrz [`docs/EXTERNAL_APIS.md`](docs/EXTERNAL_APIS.md). Demo nie
+wymaga klucza ani sieci.
+
+---
+
+## Architektura i trasy
+
+```
+web/  (Next.js + TS)            worker/ (Python + FastAPI)
+  /     immersive entry           /health            tryb + providery
+  /app  pracownia (cockpit)  ⇄    POST /api/jobs      upload → pipeline
+        upload→status→raport      GET  /api/jobs/{id} status + wynik
+        →SRT/VTT                  .../export/srt|vtt  pliki napisów
+```
+
+- **`/`** — wejście produktowe (scena). **`/app`** — robocza aplikacja (upload → przetwarzanie → raport → eksport).
+- **worker/** — pipeline `ASR → diaryzacja → dźwięki → formatowanie → walidacja WCAG → eksport`. Tryb `mock`/`api`.
+- **contracts/** — `CaptionDocument` (JSON Schema) — wspólny kontrakt danych web↔worker.
+- **docs/** — [ARCHITECTURE](docs/ARCHITECTURE.md) · [DATA_CONTRACT](docs/DATA_CONTRACT.md) · [WCAG](docs/WCAG.md) · [DECISIONS](docs/DECISIONS.md) · [BRAND_UI_GUIDELINES](docs/BRAND_UI_GUIDELINES.md) · [EXTERNAL_APIS](docs/EXTERNAL_APIS.md) · [ROADMAP](docs/ROADMAP.md)
 
 ---
 
 ## Tryby pipeline: mock vs api
 
-Worker ma jeden przełącznik `PIPELINE_MODE`:
-
-| Tryb | Co robi | Wymaga klucza API? | Zastosowanie |
-|------|---------|--------------------|--------------|
+| Tryb | Co robi | Klucz API? | Zastosowanie |
+|------|---------|------------|--------------|
 | **mock** (domyślny) | symuluje cały przepływ na przykładowym materiale PL | **nie** | demo, praca nad UI, testy |
-| **api** | realna transkrypcja audio przez OpenAI; reszta etapów jak w mock | tak (`OPENAI_API_KEY`) | realne nagrania |
+| **api** | realna transkrypcja audio (OpenAI); reszta jak w mock | tak (`OPENAI_API_KEY`) | realne nagrania |
 
-Tryb **mock jest domyślny** i działa bez żadnych kluczy — brak `OPENAI_API_KEY` nie psuje demo.
-Pełna instrukcja trybu API: [`worker/README.md`](worker/README.md).
-
-### Co jest gotowe ✅
-Mock pipeline (pełny przepływ), kontrakt `CaptionDocument`, formatowanie napisów (≤42 zn., max 2 linie),
-walidacja WCAG 2.1 AA (raport TAK/NIE + lista problemów), eksport SRT/VTT, frontend demo (upload → status →
-podgląd → raport → pobieranie), branding (logotyp/sygnet) + favicon, realna transkrypcja przez OpenAI w trybie api.
-
-### Co jest TBD 🔜
-Diaryzacja mówców (na razie jeden mówca w trybie api), detekcja dźwięków niewerbalnych dla realnego audio,
-realny czas trwania przez ffprobe, live-test API (brak klucza), pełny UI refresh wg brandingu, deploy na Vercel.
-
----
-
-## Architektura w skrócie
-
-Dwie warstwy, bo ciężkie AI/audio nie zmieści się w limitach Vercela:
-
-```
-┌──────────────────────────┐        HTTP        ┌──────────────────────────────┐
-│  web/  (Next.js + TS)    │  ───────────────▶  │  worker/  (Python + FastAPI) │
-│  Frontend / demo         │                    │  Pipeline AI + WCAG + eksport│
-│  → deploy na Vercel       │  ◀───────────────  │  → lokalnie / osobny serwer  │
-└──────────────────────────┘   CaptionDocument   └──────────────────────────────┘
-```
-
-- **web/** — upload, status, podgląd transkrypcji/mówców/dźwięków, raport WCAG, pobieranie SRT/VTT. Gotowe pod Vercel.
-- **worker/** — pipeline: `ASR → diaryzacja → dźwięki → formatowanie napisów → walidacja WCAG → eksport`. Tryb mock/api.
-- **contracts/** — `CaptionDocument` (JSON Schema) — wspólny kontrakt danych między etapami i między web↔worker.
-- **docs/** — architektura, kontrakt danych, decyzje techniczne, parametry WCAG, branding, roadmapa.
-
-Szczegóły: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) · [`docs/WCAG.md`](docs/WCAG.md) · [`docs/BRAND_UI_GUIDELINES.md`](docs/BRAND_UI_GUIDELINES.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md)
+Tryb wybiera `PIPELINE_MODE`. `mock` jest domyślny i działa bez kluczy. W trybie `api` bez klucza
+worker zwraca czytelny błąd (graceful failure) — demo pozostaje w `mock`. `GET /health` pokazuje
+aktywny `mode`, realne providery i `ready`.
 
 ---
 
 ## Uruchomienie lokalne (Windows / PowerShell)
 
-Potrzebne: **Python 3.10+** i **Node.js 18+**. Dwa terminale.
+Potrzebne: **Python 3.10+**, **Node.js 18+**. Dwa terminale.
 
-### 1) Worker (backend pipeline) — terminal 1
-
+### 1) Worker — terminal 1
 ```powershell
 cd worker
 python -m venv .venv
@@ -71,71 +68,52 @@ pip install -r requirements.txt
 copy .env.example .env
 uvicorn widzwiek.main:app --reload --port 8000
 ```
+Sprawdzenie: http://localhost:8000/health → `{"status":"ok","mode":"mock",...}`. Swagger: `/docs`.
 
-Sprawdzenie: http://localhost:8000/health → `{"status":"ok", ...}` (pokazuje aktywne providery).
-Swagger: http://localhost:8000/docs. Domyślnie działa tryb **mock** (bez klucza API).
-
-### 2) Web (frontend / demo) — terminal 2
-
+### 2) Frontend — terminal 2
 ```powershell
 cd web
 npm install
 copy .env.example .env.local
 npm run dev
 ```
+- `/` → http://localhost:3000 (wejście) · `/app` → http://localhost:3000/app (pracownia).
+- Jeśli zmieniałeś pliki, a style/route nie odświeżają się: `Remove-Item -Recurse -Force .next` i `npm run dev`.
 
-Otwórz http://localhost:3000 — wgraj plik audio/wideo, kliknij **Przetwórz**, zobacz transkrypcję,
-mówców, dźwięki, raport WCAG i pobierz SRT/VTT. W trybie mock wynik to spójny przykładowy materiał PL.
-
-### Tryb API (realna transkrypcja)
-
-W `worker/.env` ustaw `PIPELINE_MODE=api` oraz `OPENAI_API_KEY=...` i zrestartuj worker.
-Szczegóły, obsługa wideo (ffmpeg) i komunikaty błędów: [`worker/README.md`](worker/README.md).
-
-### Szybki test samego workera (bez frontendu, bez sieci)
-
-```powershell
-cd worker
-.\.venv\Scripts\Activate.ps1
-pytest -q
-python -m widzwiek.demo   # SRT/VTT + raport WCAG dla przykładu (tryb mock)
-```
+### Tryb API (opcjonalnie, realna transkrypcja)
+W `worker/.env`: `PIPELINE_MODE=api` + `OPENAI_API_KEY=...`, odkomentuj `openai` w `worker/requirements.txt`,
+`pip install -r requirements.txt`, restart workera. Szczegóły: [`worker/README.md`](worker/README.md).
 
 ---
 
-## Walidacja (CI lokalne)
-
+## Walidacja
 ```powershell
 # worker
-cd worker; .\.venv\Scripts\Activate.ps1; pytest -q
-# web
+cd worker; .\.venv\Scripts\Activate.ps1; pytest -q; python -m widzwiek.demo
+# frontend
 cd web; npm run typecheck; npm run lint; npm run build
 ```
-
----
-
-## Deploy demo na Vercel (później)
-
-Na Vercel wrzucamy **tylko `web/`** (Root Directory = `web`). Worker AI **nie** idzie na Vercel
-(limity czasu/RAM/dysku). Worker stawiamy osobno i podajemy adres przez `NEXT_PUBLIC_WORKER_URL`.
-Pełna instrukcja: [`docs/ROADMAP.md`](docs/ROADMAP.md#deploy-na-vercel).
+Testy nie wymagają żadnego klucza API ani sieci (wywołania API są mockowane).
 
 ---
 
 ## Struktura repozytorium
-
 ```
 widzwiek/
-├─ web/          # Next.js (TypeScript) — frontend/demo, Vercel-ready
-├─ worker/       # Python (FastAPI) — pipeline (mock/api), WCAG, eksport SRT/VTT
-├─ contracts/    # JSON Schema kontraktu danych CaptionDocument
-├─ docs/         # architektura, kontrakt, decyzje, WCAG, branding, roadmapa
+├─ web/          # Next.js (TS) — / (wejście) i /app (pracownia)
+├─ worker/       # Python (FastAPI) — pipeline mock/api, WCAG, eksport SRT/VTT
+├─ contracts/    # JSON Schema kontraktu CaptionDocument
+├─ docs/         # architektura, kontrakt, WCAG, decyzje, branding, external APIs, roadmapa
 ├─ .env.example
 └─ .gitignore
 ```
-
-Sekrety trzymamy wyłącznie w `.env` (ignorowane przez git). W repo nie ma żadnych kluczy API.
+Sekrety wyłącznie w `.env` (ignorowane). W repo nie ma żadnych kluczy. Branding: oficjalne assety
+w `web/public/brand/` (logotyp + sygnet), używane przez `BrandLogo` / `BrandEye`.
 
 ---
 
-SubrosAI · Widźwięk · Czerwiec 2026 · dokument wewnętrzny grupy
+## Następny etap
+Po demo stable: live API transcription test → diaryzacja → dźwięki niewerbalne → storage → deploy →
+dopracowanie warstwy UI/immersive. Szczegóły: [`docs/ROADMAP.md`](docs/ROADMAP.md).
+
+SubrosAI · Widźwięk · Demo Stable
