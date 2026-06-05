@@ -31,9 +31,11 @@ Statusy integracji: `docs/EXTERNAL_APIS.md`. Stan obecny: `docs/PRODUCT_STATUS.m
 - [ ] Lekki auth (np. magic link) — minimalny, bez pełnego systemu kont.
 - **DoD:** dostęp do `/app` chroniony; sesja użytkownika; brak twardej zależności demo od auth.
 
-## 7. Billing
-- [ ] Plany/limity, integracja płatności.
-- **DoD:** limit materiałów/minut per plan; webhook potwierdzeń; brak kluczy w repo.
+## 7. Billing MVP
+- [ ] Model kredyty/pay-per-use + subskrypcje + faktura B2B; jednostka = minuta materiału.
+- [ ] Architektura **provider-agnostic** (`BillingProvider` + adaptery); pierwszy realny dostawca (PL: P24/Tpay + faktura; zagranica: Stripe/Paddle).
+- [ ] Ekran `Plan i płatności` podpięty do realnego salda kredytów i checkoutu (zamiast mocka).
+- **DoD:** limit minut/kredytów per plan egzekwowany przy `create_job`; webhooki idempotentne; saldo spójne; faktura B2B; **brak kluczy/sekretów dostawców w repo**; demo nadal działa bez billingu (MockBillingProvider). Model i ryzyka: `docs/MONETIZATION.md`.
 
 ## 8. Security uploadu
 - [ ] Walidacja typu/rozmiaru, timeouty, sanity treści.

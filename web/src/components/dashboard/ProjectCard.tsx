@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import type { DemoProject } from "@/lib/mockData";
 import { Badge, type Tone } from "@/components/ui/Badge";
@@ -11,11 +12,19 @@ const STATUS: Record<DemoProject["status"], { tone: Tone; label: string }> = {
   review: { tone: "warn", label: "do poprawy" },
 };
 
+// W demo akcje prowadzą do reprezentatywnych widoków wyniku (brak jeszcze /app/projects/[id]).
+const ACTIONS: { label: string; href: string; icon: Parameters<typeof Icon>[0]["name"] }[] = [
+  { label: "Otwórz", href: "/app/napisy", icon: "external" },
+  { label: "Raport", href: "/app/napisy#raport", icon: "shield" },
+  { label: "Eksport", href: "/app/eksporty", icon: "download" },
+];
+
 export default function ProjectCard({ p }: { p: DemoProject }) {
   const s = STATUS[p.status];
+  const disabled = p.status === "processing";
   return (
-    <motion.button variants={fadeUp} whileHover={cardHover} whileTap={{ scale: 0.99 }}
-      className="focusring group overflow-hidden rounded-2xl border border-hair/70 bg-white/70 text-left shadow-card backdrop-blur-sm">
+    <motion.div variants={fadeUp} whileHover={cardHover}
+      className="group overflow-hidden rounded-2xl border border-hair/70 bg-white/70 shadow-card backdrop-blur-sm">
       <div className="relative h-24 overflow-hidden" style={{ background: `linear-gradient(135deg, ${p.accent}14, ${p.accent}05)` }}>
         <svg viewBox="0 0 400 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full opacity-50" aria-hidden>
           <path d="M0 48 Q50 20 100 48 T200 48 T300 48 T400 48" fill="none" stroke={p.accent} strokeWidth="2" />
@@ -31,7 +40,21 @@ export default function ProjectCard({ p }: { p: DemoProject }) {
             <Icon name="shield" size={14} /> {p.status === "processing" ? "—" : `${p.wcag}%`}
           </span>
         </div>
+        <div className="mt-3 flex gap-1.5 border-t border-hair/50 pt-3">
+          {ACTIONS.map((a) =>
+            disabled ? (
+              <span key={a.label} className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-muted/50">
+                <Icon name={a.icon} size={13} /> {a.label}
+              </span>
+            ) : (
+              <Link key={a.label} href={a.href}
+                className="focusring inline-flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50">
+                <Icon name={a.icon} size={13} /> {a.label}
+              </Link>
+            )
+          )}
+        </div>
       </div>
-    </motion.button>
+    </motion.div>
   );
 }

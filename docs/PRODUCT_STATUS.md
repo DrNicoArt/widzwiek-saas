@@ -1,7 +1,7 @@
 # Widźwięk — status produktu (brutalnie jasny)
 
 Cel: nie mylić **działającego demo** z **produktem produkcyjnym**.
-Wersja: Product Demo v0.3 (tryb mock, lokalnie, bez kluczy).
+Wersja: Product Demo v0.5 (tryb mock, lokalnie, bez kluczy; demo-hardening).
 
 ## [OK] Działa naprawdę (demo, lokalnie)
 - Worker FastAPI: `/health`, upload joba, status joba, eksport SRT/VTT.
@@ -30,6 +30,11 @@ Wersja: Product Demo v0.3 (tryb mock, lokalnie, bez kluczy).
 - Storage plików (S3/R2/Supabase), persistencja (Postgres), auth, płatności, e-mail,
   eksport PDF raportu, integracje cloud, monitoring, rate limiting, limity i bezpieczeństwo uploadu.
   Status każdej: `docs/EXTERNAL_APIS.md`.
+
+## [PLACEHOLDER] Monetyzacja / billing
+- Ekran `Plan i płatności` (`/app/plan`): plan Demo, kredyty (mock), zużycie miesięczne, plany i metody płatności.
+- Model: kredyty/pay-per-use + subskrypcje + faktura B2B; jednostka = minuta materiału. Architektura **provider-agnostic** (`MockBillingProvider`).
+- **W demo nic nie jest pobierane**; żaden dostawca nie jest wpięty. Szczegóły i ryzyka: `docs/MONETIZATION.md`.
 
 ## Wymaga kluczy / zewnętrznych usług
 - Tryb api: `OPENAI_API_KEY`. Diaryzacja: token Hugging Face (przyszłość). Reszta: EXTERNAL_APIS.

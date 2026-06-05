@@ -142,9 +142,9 @@ export default function Ustawienia() {
           </div>
 
           {/* Klucz API */}
-          <div className="mb-4">
+          <div className={`mb-4 transition-opacity ${mode === "mock" ? "opacity-70" : ""}`}>
             <label htmlFor="apikey" className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted">
-              Klucz OpenAI API
+              Klucz OpenAI API {mode === "mock" && <span className="ml-1 normal-case text-muted/70">(opcjonalne w trybie demo)</span>}
             </label>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -171,6 +171,10 @@ export default function Ustawienia() {
             <p className="mt-2 text-xs text-muted">
               Klucz wysyłany jest do lokalnego workera i przechowywany wyłącznie w jego pamięci (do restartu). Nigdy nie trafia na dysk, do repo ani do przeglądarki innych osób.
             </p>
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/5 px-3 py-2.5">
+              <Icon name="shield" size={16} className="mt-0.5 shrink-0 text-warn" />
+              <p className="text-xs text-graphite">To mechanizm <strong>dev / demo</strong> — wygodny lokalnie. W wersji produkcyjnej klucze trzymamy w backendzie (secrets manager / zmienne środowiskowe), nie przekazujemy ich przez frontend.</p>
+            </div>
           </div>
 
           {/* Model */}

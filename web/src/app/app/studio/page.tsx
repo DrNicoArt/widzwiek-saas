@@ -1,11 +1,14 @@
 "use client";
-// /app/studio — działający flow: upload → przetwarzanie (worker mock) → wynik (transkrypcja,
-// napisy, mówcy/dźwięki, raport WCAG, eksport). Wymaga uruchomionego workera.
-import { useRef, useState } from "react";
+// /app/studio — flow: upload → przetwarzanie → wynik (transkrypcja, napisy, mówcy/dźwięki, raport
+// WCAG, eksport). Działa z workerem; ma też tryb PRZYKŁADOWY (sample) — pełny wynik bez backendu.
+import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createJob, getJob } from "@/lib/api";
 import type { Job } from "@/lib/contract";
+import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
+import { DEMO_DOC } from "@/lib/demoDoc";
 import { useWorkerUp } from "@/components/shell/AppShell";
 import PageHeader from "@/components/shell/PageHeader";
 import Section from "@/components/ui/Section";
@@ -15,6 +18,7 @@ import Icon from "@/components/ui/Icon";
 import ProcessingPipeline from "@/components/pipeline/ProcessingPipeline";
 import WcagReport from "@/components/wcag/WcagReport";
 import ExportTiles from "@/components/ExportTiles";
+import ExportButtons from "@/components/ExportButtons";
 import TranscriptTable from "@/components/result/TranscriptTable";
 import CaptionsTable from "@/components/result/CaptionsTable";
 import SpeakersSounds from "@/components/result/SpeakersSounds";
@@ -37,20 +41,49 @@ function L({ n, children }: { n: number; children: React.ReactNode }) {
   );
 }
 
-export default function Studio() {
+function UsageEstimate({ durationMs }: { durationMs: number }) {
+  const minutes = Math.max(1, Math.ceil(durationMs / 60000));
+  const credits = estimateCredits(durationMs, { speakers: true, sounds: true, wcag: true });
+  const feats = ["Transkrypcja PL", "Mówcy (placeholder)", "Dźwięki (placeholder)", "Raport WCAG", "Eksport SRT/VTT"];
+  return (
+    <motion.div variants={fadeUp} className="mt-4 rounded-xl border border-hair/70 bg-brand-50/30 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="sparkles" size={16} className="text-brand-600" /> Szacunek (demo)</h4>
+        <span className="text-xs text-muted">~{minutes} min materiału</span>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {feats.map((f) => <span key={f} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-graphite ring-1 ring-hair/60">{f}</span>)}
+      </div>
+      <p className="mt-2 text-sm text-graphite">Szacowany koszt: <strong className="tnum">≈ {credits} kredytów</strong>. <span className="text-muted">W trybie demo kredyty nie są pobierane.</span></p>
+    </motion.div>
+  );
+}
+
+function StudioInner() {
   const workerUp = useWorkerUp();
+  const params = useSearchParams();
   const [file, setFile] = useState<File | null>(null);
   const [drag, setDrag] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [job, setJob] = useState<Job | null>(null);
+  const [sample, setSample] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
   const pick = () => inputRef.current?.click();
 
+  function runSample() {
+    setError(null); setFile(null); setSample(true); setPhase("processing");
+    setTimeout(() => { setJob(buildSampleJob()); setPhase("done"); }, 900);
+  }
+
+  // wejście z ?sample=1 (np. z banera offline / dashboardu)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (params.get("sample") === "1") runSample(); }, []);
+
   async function handleRun() {
     if (!file) return;
-    setError(null); setJob(null); setPhase("uploading");
+    setError(null); setJob(null); setSample(false); setPhase("uploading");
     try {
       const created = await createJob(file);
       setPhase("processing");
@@ -65,19 +98,23 @@ export default function Studio() {
     } catch (e) { setError(e instanceof Error ? e.message : "Nieznany błąd."); setPhase("error"); }
   }
   const ps = pipe(phase);
+  const estMs = sample ? DEMO_DOC.media.duration_ms : file ? (file.size / (1024 * 1024)) * 60000 : 0;
 
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader icon="upload" title="Nowy materiał"
-        desc="Wgraj plik audio/wideo i uruchom przetwarzanie. W trybie mock zobaczysz pełny przepływ bez zewnętrznych API (wynik to spójny przykład PL)." />
+        desc="Wgraj plik audio/wideo i uruchom przetwarzanie — albo zobacz pełny przepływ na przykładowym materiale (bez backendu)." />
 
       <div className="space-y-8">
         <Section>
           <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl border border-hair/70 bg-white/70 p-6 shadow-card backdrop-blur-sm">
-            <L n={1}>Materiał</L>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <L n={1}>Materiał</L>
+              <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Użyj przykładowego materiału</Button>
+            </div>
             <div
               onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
-              onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) setFile(f); }}
+              onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) { setFile(f); setSample(false); } }}
               onClick={pick} role="button" tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }}
               className={["focusring relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200",
@@ -85,8 +122,16 @@ export default function Studio() {
               <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-600 text-white shadow-lift"><Icon name="upload" size={28} /></span>
               <p className="mt-4 text-[15px] font-medium text-graphite">Przeciągnij plik lub kliknij, aby wybrać</p>
               <p className="mt-1 text-xs text-muted">MP4, MOV, MP3, WAV, M4A — audio lub wideo</p>
-              <input ref={inputRef} type="file" accept="audio/*,video/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <input ref={inputRef} type="file" accept="audio/*,video/*" className="hidden" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setSample(false); }} />
             </div>
+
+            {sample && !file && (
+              <div className="mt-4 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
+                <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700"><Icon name="sparkles" size={18} /></span>
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-graphite">{DEMO_DOC.media.filename}</p><p className="text-xs text-muted">materiał przykładowy · tryb demo (mock)</p></div>
+                <Badge tone="info">przykład</Badge>
+              </div>
+            )}
             {file && (
               <div className="mt-4 flex items-center gap-3 rounded-xl border border-hair bg-white px-4 py-3">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-50 text-brand-700"><Icon name="file" size={18} /></span>
@@ -94,15 +139,18 @@ export default function Studio() {
                 <button onClick={(e) => { e.stopPropagation(); setFile(null); }} aria-label="Usuń plik" className="focusring rounded-lg p-2 text-muted hover:bg-slate-100"><Icon name="x" size={18} /></button>
               </div>
             )}
+
+            {(file || sample) && <UsageEstimate durationMs={estMs} />}
+
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Button onClick={handleRun} disabled={!file || busy || workerUp === false} loading={busy} icon={busy ? undefined : "play"}>{busy ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
-              {workerUp === false && <span className="text-xs text-warn">Worker offline — uruchom: <code>uvicorn widzwiek.main:app --port 8000</code></span>}
+              <Button onClick={handleRun} disabled={!file || busy || workerUp === false} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
+              {workerUp === false && <span className="text-xs text-muted">Worker offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> lub uruchom backend.</span>}
             </div>
           </motion.div>
         </Section>
 
         {phase !== "idle" && (
-          <Section><motion.div variants={fadeUp}><L n={2}>Przetwarzanie</L><ProcessingPipeline activeIndex={ps.active} progress={ps.progress} error={ps.error} /></motion.div></Section>
+          <Section><motion.div variants={fadeUp}><L n={2}>Przetwarzanie {sample && <span className="ml-1 text-[11px] normal-case text-brand-700">· tryb przykładowy</span>}</L><ProcessingPipeline activeIndex={ps.active} progress={ps.progress} error={ps.error} /></motion.div></Section>
         )}
         {error && (
           <Section>
@@ -120,17 +168,18 @@ export default function Studio() {
             <Section><L n={4}>Napisy</L><motion.div variants={fadeUp}><CaptionsTable doc={job.result} report={job.result.wcag} /></motion.div></Section>
             <Section><L n={5}>Mówcy i dźwięki</L><SpeakersSounds doc={job.result} /></Section>
             <Section><L n={6}>Raport WCAG</L><WcagReport report={job.result.wcag} /></Section>
-            <Section><L n={7}>Eksport</L><ExportTiles jobId={job.id} /></Section>
-            <Section>
-              <motion.p variants={fadeUp} className="text-center text-xs text-muted">
-                Chcesz zobaczyć gotowe sekcje bez workera? Sprawdź <Link href="/app/napisy" className="text-brand-700 underline">Napisy</Link>,{" "}
-                <Link href="/app/mowcy" className="text-brand-700 underline">Mówcy i dźwięki</Link>,{" "}
-                <Link href="/app/eksporty" className="text-brand-700 underline">Eksporty</Link> (dane demo).
-              </motion.p>
-            </Section>
+            <Section><L n={7}>Eksport</L>{sample ? <ExportButtons doc={job.result} /> : <ExportTiles jobId={job.id} />}</Section>
           </>
         )}
       </div>
     </div>
+  );
+}
+
+export default function Studio() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-5xl py-10 text-sm text-muted">Wczytywanie…</div>}>
+      <StudioInner />
+    </Suspense>
   );
 }

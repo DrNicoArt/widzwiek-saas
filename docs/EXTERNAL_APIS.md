@@ -48,3 +48,23 @@ Statusy: **mock** (działa w demo) · **api-ready** (adapter gotowy, czeka na kl
 3. (Wideo) zainstaluj `ffmpeg` i dodaj do PATH.
 4. Restart workera. `GET /health` pokaże `"mode":"api"`, `"api_key_present":true`, `"ready":true`.
 Brak klucza w trybie api → czytelny błąd w polu `error` joba; demo zawsze może wrócić do `mock`.
+
+## Billing / płatności (provider-agnostic)
+
+Architektura neutralna wobec dostawcy: wspólny interfejs `BillingProvider` + wymienne adaptery.
+W demo działa `MockBillingProvider` — nic nie pobiera. Model i ryzyka: `docs/MONETIZATION.md`.
+Ekran: `/app/plan` (dane z `web/src/lib/billing.ts`).
+
+| Integracja | Status | Do czego | ENV | Wymagane do demo | Fallback w mock |
+|---|---|---|---|---|---|
+| Rozliczenia / kredyty | **placeholder** | pula kredytów, pay-per-use | `BILLING_PROVIDER` | nie | MockBillingProvider (nic nie pobiera) |
+| Stripe | planned | karty, subskrypcje (międzynarodowo) | `STRIPE_*` | nie | brak |
+| Paddle | planned | merchant of record, VAT | `PADDLE_*` | nie | brak |
+| Przelewy24 | planned | PL: przelewy, BLIK | `P24_*` | nie | brak |
+| PayU | planned | PL/CEE | `PAYU_*` | nie | brak |
+| Tpay | planned | PL: przelewy, BLIK | `TPAY_*` | nie | brak |
+| PayPal | planned | globalnie | `PAYPAL_*` | nie | brak |
+| Faktura / przelew B2B | planned | instytucje, ręczna aktywacja | — | nie | aktywacja ręczna |
+| Voucher / prepaid / grant | planned | kody, dostęp sponsorowany | — | nie | brak |
+
+Bezpieczeństwo: brak danych kartowych po naszej stronie; klucze dostawców w secrets managerze, **nie w repo**.

@@ -29,11 +29,11 @@ export default function Przeglad() {
         <div className="relative grid items-center gap-6 md:grid-cols-[1.4fr_1fr]">
           <div>
             <Badge tone="info" icon="sparkles">Tryb demo · mock</Badge>
-            <h2 className="mt-3 text-2xl font-medium tracking-tight text-graphite md:text-3xl">Zacznij nowy materiał</h2>
-            <p className="mt-1 max-w-lg text-sm text-muted">Wgraj audio/wideo i przejdź pełny przepływ: transkrypcja → mówcy → dźwięki → raport WCAG → eksport SRT/VTT.</p>
+            <h2 className="mt-3 text-2xl font-medium tracking-tight text-graphite md:text-3xl">Napisy zgodne z WCAG — gotowe do publikacji</h2>
+            <p className="mt-1 max-w-lg text-sm text-muted">Captions, nie zwykłe subtitles: mowa, mówcy i dźwięki niewerbalne, raport zgodności i eksport SRT/VTT — z jednego pliku audio lub wideo.</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link href="/app/studio"><Button icon="upload">Nowy materiał</Button></Link>
-              <Link href="/app/napisy"><Button variant="secondary" icon="captions">Zobacz przykład</Button></Link>
+              <Link href="/app/studio?sample=1"><Button variant="secondary" icon="play">Użyj przykładowego materiału</Button></Link>
             </div>
           </div>
           <div className="hidden justify-self-center md:block">

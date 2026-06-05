@@ -14,6 +14,7 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/app/napisy", label: "Napisy", icon: "captions" },
   { href: "/app/mowcy", label: "Mówcy i dźwięki", icon: "users" },
   { href: "/app/eksporty", label: "Eksporty", icon: "download" },
+  { href: "/app/plan", label: "Plan i płatności", icon: "card" },
   { href: "/app/integracje", label: "Integracje", icon: "plug" },
   { href: "/app/ustawienia", label: "Ustawienia", icon: "settings" },
 ];
