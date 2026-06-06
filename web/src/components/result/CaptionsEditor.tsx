@@ -19,7 +19,9 @@ const NAMED_HEX: Record<string, string> = { white: "#f5f5f5", yellow: "#ffd400",
 const PRESETS = ["#f5f5f5", "#ffd400", "#22d3ee", "#4ade80", "#ff8a5b", "#ff5d6c", "#c084fc", "#60a5fa"];
 const SOUNDS = ["[muzyka]", "[wesoła muzyka]", "[muzyka dramatyczna]", "[oklaski]", "[brawa]", "[śmiech]", "[płacz]", "[pukanie do drzwi]", "[otwieranie drzwi]", "[kroki]", "[telefon dzwoni]", "[szczekanie psa]", "[wybuch]", "[wiatr]", "[deszcz]", "[cisza]", "[szum tłumu]"];
 
+const MAX_CPS = 21, MIN_DUR = 1000, MAX_DUR = 7000, MIN_GAP = 1500;
 const sec = (ms: number) => (ms / 1000).toFixed(1);
+const cpsOf = (text: string, ms: number) => (ms > 0 ? text.replace(/\s/g, "").length / (ms / 1000) : 0);
 const uid = (p: string) => `${p}${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
 const toHex = (c: string) => (NAMED_HEX[c] ?? (c?.startsWith("#") ? c : "#f5f5f5"));
 
@@ -57,12 +59,24 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
   const [style, setStyle] = useState<CaptionStyle>(doc.style ?? DEFAULT_STYLE);
   const [sel, setSel] = useState(0);
   const [activeWord, setActiveWord] = useState(0);
+  const [issues, setIssues] = useState(doc.wcag?.issues ?? []);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ tone: Tone; text: string } | null>(null);
 
   const patch = (id: string, p: Partial<Row>) => setRows((r) => r.map((x) => (x.id === id ? { ...x, ...p } : x)));
   const setStyleK = <K extends keyof CaptionStyle>(k: K, v: CaptionStyle[K]) => setStyle((s) => ({ ...s, [k]: v }));
   const current = rows[Math.min(sel, rows.length - 1)] ?? null;
+  const issueByCue = useMemo(() => {
+    const m = new Map<string, "err" | "warn">();
+    for (const it of issues) {
+      if (!it.cue_id) continue;
+      const t: "err" | "warn" = it.severity === "error" ? "err" : "warn";
+      if (m.get(it.cue_id) !== "err") m.set(it.cue_id, t === "err" ? "err" : m.get(it.cue_id) || t);
+    }
+    return m;
+  }, [issues]);
+  const errCount = issues.filter((i) => i.severity === "error").length;
+  const warnCount = issues.filter((i) => i.severity === "warning").length;
 
   function addCue() {
     const last = rows[rows.length - 1]; const start = last ? last.end_ms + 500 : 0;
@@ -79,6 +93,19 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
       const a = { ...c, end_ms: mid, text: words.slice(0, h).join(" "), tokens: undefined };
       const b = { ...c, id: uid("e"), start_ms: mid, text: words.slice(h).join(" ") || "...", tokens: undefined };
       return [...r.slice(0, i), a, b, ...r.slice(i + 1)];
+    });
+  }
+  function autofixTiming() {
+    setRows((r) => {
+      const sorted = [...r].sort((a, b) => a.start_ms - b.start_ms);
+      let prevEnd = -Infinity;
+      return sorted.map((c) => {
+        let start = c.start_ms, end = c.end_ms;
+        if (start < prevEnd) start = prevEnd;            // bez nakladania
+        if (end - start < MIN_DUR) end = start + MIN_DUR; // min czas
+        prevEnd = end + MIN_GAP;                          // bufor anty-miganie
+        return { ...c, start_ms: start, end_ms: end };
+      });
     });
   }
   function addSpeaker() { setSpeakers((s) => [...s, { id: uid("S"), label: `Mówca ${s.length + 1}`, color: PRESETS[s.length % PRESETS.length] }]); }
@@ -115,6 +142,7 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
         onSaved(job.result);
         setRows(job.result.cues.map((c) => ({ id: c.id, start_ms: c.start_ms, end_ms: c.end_ms, text: c.text, kind: c.kind, speaker_id: c.speaker_id, tokens: c.tokens ?? undefined })));
         if (job.result.style) setStyle(job.result.style);
+        setIssues(job.result.wcag?.issues ?? []);
         const ok = job.result.wcag.compliant;
         setMsg({ tone: ok ? "ok" : "warn", text: ok ? "Zapisano. Materiał spełnia WCAG 2.1 AA." : `Zapisano. WCAG: ${job.result.wcag.stats.error_count} błędów, ${job.result.wcag.stats.warning_count} ostrzeżeń.` });
       }
@@ -232,6 +260,8 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
           <h3 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="captions" size={16} /> Napisy ({rows.length})</h3>
           <div className="flex items-center gap-3">
             {msg && <span className={`text-xs ${msg.tone === "ok" ? "text-ok" : msg.tone === "err" ? "text-err" : "text-warn"}`}>{msg.text}</span>}
+            <Badge tone={errCount ? "err" : warnCount ? "warn" : "ok"} icon={errCount ? "alert" : "check"}>{errCount} bł. · {warnCount} ostrz.</Badge>
+            <Button variant="secondary" icon="clock" onClick={autofixTiming}>Auto-popraw timing</Button>
             <Button variant="secondary" icon="captions" onClick={addCue}>Dodaj napis</Button>
             <Button onClick={save} loading={saving} icon="check">Zapisz</Button>
           </div>
@@ -240,6 +270,7 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
           {rows.map((r, i) => (
             <li key={r.id} onClick={() => { setSel(i); setActiveWord(0); }} className={`cursor-pointer px-4 py-3 ${sel === i ? "bg-brand-50/50" : "hover:bg-slate-50/60"}`}>
               <div className="flex flex-wrap items-center gap-2">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${issueByCue.get(r.id) === "err" ? "bg-err" : issueByCue.get(r.id) === "warn" ? "bg-warn" : "bg-ok/60"}`} title={issueByCue.get(r.id) ? "Ten napis ma uwagi WCAG (po ostatnim zapisie)" : "OK po ostatnim zapisie"} />
                 <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-muted">{msToTimecode(r.start_ms)}</span>
                 <input value={r.text} onClick={(e) => e.stopPropagation()} onChange={(e) => patch(r.id, { text: e.target.value, tokens: undefined })} className={`focusring min-w-[180px] flex-1 rounded-lg border border-hair bg-white px-2.5 py-1.5 text-sm text-graphite ${r.kind === "sound" ? "italic text-muted" : ""}`} />
                 <button onClick={(e) => { e.stopPropagation(); splitCue(r.id); }} aria-label="Podziel" title="Podziel napis" className="focusring rounded-lg p-1.5 text-muted hover:bg-brand-50 hover:text-brand-700"><Icon name="chevron" size={16} /></button>
@@ -255,6 +286,18 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
                     {speakers.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                   </select>
                 )}
+                {(() => {
+                  const dur = r.end_ms - r.start_ms;
+                  const cps = r.kind === "speech" ? cpsOf(r.text, dur) : 0;
+                  const durTone = dur < MIN_DUR ? "text-err" : dur > MAX_DUR ? "text-warn" : "text-muted";
+                  const cpsTone = cps > MAX_CPS ? "text-err" : cps > MAX_CPS * 0.85 ? "text-warn" : "text-muted";
+                  return (
+                    <span className="ml-auto flex items-center gap-3 font-mono tabular-nums">
+                      <span className={durTone} title="czas wyświetlania">{(dur / 1000).toFixed(1)}s</span>
+                      {r.kind === "speech" && <span className={cpsTone} title="tempo czytania (znaki/s, zalecane <=21)">{cps.toFixed(0)} zn/s</span>}
+                    </span>
+                  );
+                })()}
               </div>
             </li>
           ))}
