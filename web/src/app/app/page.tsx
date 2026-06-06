@@ -1,9 +1,12 @@
 "use client";
 // /app — Przegląd: pulpit z szybkim startem, statystykami, skrótem raportu WCAG i ostatnimi projektami.
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { DEMO_PROJECTS, DEMO_STATS, type DemoProject } from "@/lib/mockData";
 import { DEMO_DOC } from "@/lib/demoDoc";
+import { listJobs } from "@/lib/api";
+import type { Job } from "@/lib/contract";
 import PageHeader from "@/components/shell/PageHeader";
 import StatTile from "@/components/ui/StatTile";
 import Button from "@/components/ui/Button";
@@ -19,6 +22,21 @@ import { fadeUp, stagger, inView } from "@/lib/motion";
 const score = Math.max(0, 100 - DEMO_DOC.wcag.stats.error_count * 15 - DEMO_DOC.wcag.stats.warning_count * 4);
 
 export default function Przeglad() {
+  const [stats, setStats] = useState(DEMO_STATS);
+  useEffect(() => {
+    listJobs().then((jobs: Job[]) => {
+      if (!jobs || jobs.length === 0) return;
+      const inProgress = jobs.filter((j) => j.status === "processing" || j.status === "queued").length;
+      const ok = jobs.filter((j) => j.result?.wcag.compliant).length;
+      const review = jobs.filter((j) => j.status === "done" && j.result && !j.result.wcag.compliant).length;
+      setStats([
+        { label: "Wszystkie materiały", value: jobs.length, icon: "folder" },
+        { label: "W toku", value: inProgress, icon: "clock" },
+        { label: "Zgodne z WCAG", value: ok, icon: "checkCircle" },
+        { label: "Do poprawy", value: review, icon: "alert" },
+      ]);
+    }).catch(() => {});
+  }, []);
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader icon="grid" title="Przegląd" desc="Pulpit Pracowni Widźwięk — szybki start, statystyki i ostatnie projekty." />
@@ -52,7 +70,7 @@ export default function Przeglad() {
 
       {/* Statystyki */}
       <motion.div initial="hidden" whileInView="show" viewport={inView} variants={stagger} className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {DEMO_STATS.map((s) => (
+        {stats.map((s) => (
           <StatTile key={s.label} label={s.label} value={s.value} icon={s.icon as IconName}
             tone={s.label.includes("poprawy") ? "warn" : s.label.includes("Zgodne") ? "ok" : "info"} />
         ))}

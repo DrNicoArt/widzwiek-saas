@@ -26,6 +26,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <WorkerCtx.Provider value={workerUp}>
+      <a href="#tresc" className="focusring sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white">Przejdź do treści</a>
       <SceneBackground />
       <div className="grain" aria-hidden />
       <AnimatePresence>{booting && <Splash key="splash" />}</AnimatePresence>
@@ -34,7 +35,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
           {workerUp === false && <OfflineBanner onRetry={ping} />}
-          <main className="flex-1 px-6 py-8">{children}</main>
+          <main id="tresc" tabIndex={-1} className="flex-1 px-6 py-8">{children}</main>
         </div>
       </div>
     </WorkerCtx.Provider>

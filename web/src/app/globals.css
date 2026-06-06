@@ -22,6 +22,8 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #A9C0DC; background-clip: content-box; }
 
 @layer utilities {
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .focus\\:not-sr-only:focus { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
   .glass { background: rgba(255,255,255,0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   .tnum { font-variant-numeric: tabular-nums; }
   .focusring:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0,87,168,0.18); }
