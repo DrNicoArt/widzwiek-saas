@@ -106,7 +106,7 @@ def test_vtt_embeds_style_and_position():
     doc = CaptionDocument(
         media=MediaInfo(filename="a.mp3", source_kind=SourceKind.audio, duration_ms=2000),
         speakers=[Speaker(id="S1", label="Lektor", color="yellow")],
-        style=CaptionStyle(font_family="serif", font_size="lg", position="top", background=False),
+        style=CaptionStyle(font_family="serif", font_size=24, position="top", background=False),
         cues=[Cue(id="c1", index=1, start_ms=0, end_ms=2000, kind=CueKind.speech, speaker_id="S1", lines=["Czesc"], text="Czesc")],
     )
     vtt = to_vtt(doc)
@@ -127,3 +127,17 @@ def test_update_with_style_rewraps_to_max_chars():
     for c in out["cues"]:
         assert len(c["lines"]) <= 2
     assert out["style"]["max_chars_per_line"] == 15
+
+
+def test_vtt_tokens_per_word():
+    from widzwiek.export import to_vtt
+    from widzwiek.contracts import CaptionDocument, MediaInfo, SourceKind, Cue, CueKind, CueToken
+    doc = CaptionDocument(
+        media=MediaInfo(filename="a.mp3", source_kind=SourceKind.audio, duration_ms=2000),
+        cues=[Cue(id="c1", index=1, start_ms=0, end_ms=2000, kind=CueKind.speech, lines=["Ala ma kota"], text="Ala ma kota",
+                  tokens=[CueToken(text="Ala", color="#ff0000", bold=True), CueToken(text="ma"), CueToken(text="kota", color="#ff0000")])],
+    )
+    vtt = to_vtt(doc)
+    assert "#ff0000" in vtt          # klasa koloru tokenu
+    assert "<c.wc0>Ala</c>" in vtt or "<b><c.wc0>Ala</c></b>" in vtt or "<c.wc0>Ala</c></b>" in vtt
+    assert "<b>" in vtt              # pogrubienie

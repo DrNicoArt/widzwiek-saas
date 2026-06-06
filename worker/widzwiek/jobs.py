@@ -21,7 +21,10 @@ def normalize_document(doc: CaptionDocument) -> CaptionDocument:
     cues = sorted(doc.cues, key=lambda c: (c.start_ms, c.end_ms))
     fixed: list[Cue] = []
     for i, c in enumerate(cues, start=1):
-        text = (c.text or " ".join(c.lines)).strip()
+        if c.tokens:
+            text = " ".join(t.text for t in c.tokens).strip()
+        else:
+            text = (c.text or " ".join(c.lines)).strip()
         if c.kind == CueKind.speech:
             lines = formatter.wrap_lines(text, doc.style.max_chars_per_line, doc.style.max_lines)
         else:
