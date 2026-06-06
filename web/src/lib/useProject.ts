@@ -14,6 +14,7 @@ export interface ProjectView {
   title: string;
   status: ProjectStatus;
   doc: CaptionDocument | null;
+  createdAt?: string;
 }
 
 export function useProject(id: string) {
@@ -31,6 +32,7 @@ export function useProject(id: string) {
       .then((j) => setV({
         loading: false, found: true, real: true,
         title: j.filename || "Materiał", status: (j.status as ProjectStatus) ?? "processing", doc: j.result ?? null,
+        createdAt: j.created_at,
       }))
       .catch(() => setV({ loading: false, found: false, real: false, title: "", status: "error", doc: null }));
   }, [id]);

@@ -28,7 +28,7 @@ export default function ProjectSummary() {
   const cards = [
     { href: `${base}/napisy`, icon: "captions" as const, title: "Napisy", desc: `${doc.cues.length} segmentów z timingiem i statusem zgodności` },
     { href: `${base}/mowcy`, icon: "users" as const, title: "Mówcy i dźwięki", desc: `${doc.speakers.length} mówców + opisy dźwięków niewerbalnych` },
-    { href: `${base}/raport`, icon: "shield" as const, title: "Raport WCAG", desc: doc.wcag.compliant ? "Spełnia WCAG 2.1 AA: TAK" : "Wymaga poprawek" },
+    { href: `${base}/raport`, icon: "shield" as const, title: "Szczegóły audytu WCAG", desc: doc.wcag.compliant ? "Spełnia WCAG 2.1 AA" : `${doc.wcag.stats.error_count} błędów · ${doc.wcag.stats.warning_count} ostrzeżeń` },
     { href: `${base}/eksporty`, icon: "download" as const, title: "Eksporty", desc: "Pobierz SRT, VTT, TXT, JSON" },
   ];
 
@@ -40,7 +40,13 @@ export default function ProjectSummary() {
           <p className="text-sm font-medium text-graphite">{doc.wcag.compliant ? "Materiał gotowy do publikacji jako dostępny cyfrowo" : "Materiał wymaga poprawek"}</p>
           <p className="text-xs text-muted">{doc.wcag.stats.error_count} błędów · {doc.wcag.stats.warning_count} ostrzeżeń · {doc.wcag.stats.cue_count} napisów.</p>
         </div>
-        <Badge tone={doc.wcag.compliant ? "ok" : "err"}>{doc.wcag.compliant ? "WCAG TAK" : "WCAG NIE"}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge tone={doc.wcag.compliant ? "ok" : "warn"}>{doc.wcag.compliant ? "WCAG: spełnia" : "WCAG: do poprawy"}</Badge>
+          <Link href={doc.wcag.compliant ? `${base}/eksporty` : `${base}/napisy`}
+            className="focusring inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2 text-xs font-medium text-white hover:bg-brand-700">
+            <Icon name={doc.wcag.compliant ? "download" : "check"} size={15} /> {doc.wcag.compliant ? "Eksportuj" : "Napraw problemy"}
+          </Link>
+        </div>
       </motion.div>
       <div className="grid gap-4 sm:grid-cols-2">
         {cards.map((c) => (

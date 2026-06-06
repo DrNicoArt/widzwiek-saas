@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useProject } from "@/lib/useProject";
@@ -24,8 +25,17 @@ export default function ProjectEksporty() {
     </div>
   );
 
+  const ok = doc.wcag.compliant;
   return (
     <motion.div initial="hidden" whileInView="show" viewport={inView} variants={fadeUp} className="space-y-4">
+      <div className={`flex flex-wrap items-center gap-3 rounded-2xl border p-4 ${ok ? "border-ok/30 bg-ok/5" : "border-warn/30 bg-warn/5"}`}>
+        <span className={`grid h-9 w-9 place-items-center rounded-lg ${ok ? "bg-ok/10 text-ok" : "bg-warn/10 text-warn"}`}><Icon name={ok ? "checkCircle" : "alert"} size={18} /></span>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-graphite">{ok ? "Gotowe do publikacji jako dostępne cyfrowo" : "Zalecana poprawka przed publikacją"}</p>
+          <p className="text-xs text-muted">{ok ? "Materiał spełnia WCAG 2.1 AA." : `${doc.wcag.stats.error_count} błędów · ${doc.wcag.stats.warning_count} ostrzeżeń — popraw w Edytorze napisów.`}</p>
+        </div>
+        {!ok && <Link href={`/app/projekty/${id}/napisy`} className="focusring inline-flex items-center gap-1.5 rounded-xl border border-warn/40 px-3 py-2 text-xs font-medium text-warn hover:bg-warn/10"><Icon name="check" size={15} /> Napraw</Link>}
+      </div>
       {real ? (
         <motion.div variants={stagger} className="grid gap-4 sm:grid-cols-2">
           {REAL.map((f) => (
