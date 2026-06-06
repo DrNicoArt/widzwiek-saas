@@ -23,11 +23,12 @@ export default function ProjectNapisy() {
   if (loading) return <Note text="Wczytywanie napisów…" />;
   if (!doc) return <Note text="Napisy pojawią się po zakończeniu przetwarzania." />;
 
+  if (real) return <CaptionsEditor jobId={id} doc={doc} onSaved={setDoc} />;
   return (
     <motion.div initial="hidden" whileInView="show" viewport={inView} variants={fadeUp} className="space-y-6">
-      <p className="text-sm text-muted">{real ? "Edytuj tekst i czas — po zapisie worker prze-zawija linie i ponownie liczy raport WCAG." : "Podgląd i walidacja (materiał demo). Edycja dostępna dla wgranych materiałów."}</p>
+      <p className="text-sm text-muted">Podgląd i walidacja (materiał demo). Edycja dostępna dla wgranych materiałów.</p>
       <TranscriptTable doc={doc} />
-      {real ? <CaptionsEditor jobId={id} doc={doc} onSaved={setDoc} /> : <CaptionsTable doc={doc} report={doc.wcag} />}
+      <CaptionsTable doc={doc} report={doc.wcag} />
     </motion.div>
   );
 }
