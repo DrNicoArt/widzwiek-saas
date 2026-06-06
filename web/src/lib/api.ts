@@ -1,8 +1,10 @@
 // Klient API workera. Frontend NIE liczy WCAG ani nie formatuje napisów — tylko wywołuje worker.
-import type { Job } from "./contract";
+import type { Job, CaptionDocument } from "./contract";
 
 export const WORKER_URL =
   process.env.NEXT_PUBLIC_WORKER_URL?.replace(/\/$/, "") || "http://localhost:8000";
+
+export type ExportFmt = "srt" | "vtt" | "txt" | "json";
 
 export interface HealthInfo {
   status: string;
@@ -36,7 +38,28 @@ export async function getJob(id: string): Promise<Job> {
   return res.json();
 }
 
-export function exportUrl(id: string, fmt: "srt" | "vtt"): string {
+export async function listJobs(): Promise<Job[]> {
+  const res = await fetch(`${WORKER_URL}/api/jobs`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Nie udało się pobrać listy materiałów (${res.status}).`);
+  return res.json();
+}
+
+export async function deleteJob(id: string): Promise<void> {
+  const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Nie udało się usunąć materiału (${res.status}).`);
+}
+
+export async function updateDocument(id: string, doc: CaptionDocument): Promise<Job> {
+  const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(doc),
+  });
+  if (!res.ok) throw new Error(`Nie udało się zapisać zmian (${res.status}).`);
+  return res.json();
+}
+
+export function exportUrl(id: string, fmt: ExportFmt): string {
   return `${WORKER_URL}/api/jobs/${id}/export/${fmt}`;
 }
 

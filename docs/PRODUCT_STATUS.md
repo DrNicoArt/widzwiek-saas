@@ -1,9 +1,13 @@
 # Widźwięk — status produktu (brutalnie jasny)
 
 Cel: nie mylić **działającego demo** z **produktem produkcyjnym**.
-Wersja: Product Demo v0.5 (tryb mock, lokalnie, bez kluczy; demo-hardening).
+Wersja: Product Demo v0.6 (tryb mock; realny, trwały obieg offline — bez API).
 
 ## [OK] Działa naprawdę (demo, lokalnie)
+- **Realny rdzeń offline (bez API):** trwała persistencja jobów (zrzut JSON, ładowanie po restarcie),
+  lista materiałów `GET /api/jobs`, usuwanie, **edytor napisów** `PUT /api/jobs/{id}` (edycja tekstu/czasu →
+  ponowna walidacja WCAG + prze-zawijanie linii), eksport **SRT/VTT/TXT/JSON**, realny czas trwania (ffprobe).
+  Frontend: Projekty pokazują realne wgrane materiały, edycja w zakładce Napisy, eksport z workera.
 - Worker FastAPI: `/health`, upload joba, status joba, eksport SRT/VTT.
 - Mock pipeline: pełny przepływ → `CaptionDocument` (transkrypcja, mówcy, dźwięki — dane demo).
 - Walidacja WCAG 2.1 AA: raport TAK/NIE + lista błędów/ostrzeżeń (realna logika, nie mock).

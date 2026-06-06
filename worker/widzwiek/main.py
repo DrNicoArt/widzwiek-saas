@@ -16,8 +16,8 @@ from pydantic import BaseModel
 
 from .api_check import readiness
 from .config import settings
-from .contracts import Job
-from .export import to_srt, to_vtt
+from .contracts import CaptionDocument, Job
+from .export import to_srt, to_txt, to_vtt
 from .jobs import store
 from .pipeline.providers import select_providers
 
@@ -121,6 +121,43 @@ def _require_done(job_id: str) -> Job:
     if not job.result:
         raise HTTPException(status_code=409, detail=f"Job nie jest gotowy (status: {job.status}).")
     return job
+
+
+@app.get("/api/jobs", response_model=list[Job])
+def list_jobs() -> list[Job]:
+    """Lista zapisanych materialow (trwala, laduje sie z dysku po restarcie)."""
+    return store.list()
+
+
+@app.delete("/api/jobs/{job_id}")
+def delete_job(job_id: str) -> dict:
+    if not store.delete(job_id):
+        raise HTTPException(status_code=404, detail="Job nie istnieje.")
+    return {"ok": True}
+
+
+@app.put("/api/jobs/{job_id}", response_model=Job)
+def update_job_document(job_id: str, doc: CaptionDocument) -> Job:
+    """Edytor napisow: zapis poprawionego dokumentu -> normalizacja + ponowna
+    walidacja WCAG + trwaly zapis. W pelni offline (bez AI)."""
+    job = store.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job nie istnieje.")
+    return store.update_document(job, doc)
+
+
+@app.get("/api/jobs/{job_id}/export/txt", response_class=PlainTextResponse)
+def export_txt(job_id: str) -> PlainTextResponse:
+    job = _require_done(job_id)
+    return PlainTextResponse(to_txt(job.result), media_type="text/plain",
+                             headers={"Content-Disposition": f'attachment; filename="{job_id}.txt"'})
+
+
+@app.get("/api/jobs/{job_id}/export/json", response_class=PlainTextResponse)
+def export_json(job_id: str) -> PlainTextResponse:
+    job = _require_done(job_id)
+    return PlainTextResponse(job.result.model_dump_json(indent=2), media_type="application/json",
+                             headers={"Content-Disposition": f'attachment; filename="{job_id}.json"'})
 
 
 @app.get("/api/jobs/{job_id}/export/srt", response_class=PlainTextResponse)

@@ -19,17 +19,17 @@ from ..contracts import (
 )
 from ..wcag import validate
 from . import formatter
-from .audio import AUDIO_EXT, ensure_audio
+from .audio import AUDIO_EXT, ensure_audio, probe_duration_ms
 from .mock_data import MOCK_DURATION_MS
 from .providers import select_providers
 
 
-def _probe_media(filename: str, mode: str) -> MediaInfo:
-    """Ingest. Czas trwania: w trybie mock stały (z mock_data), w trybie api
-    ustalany później na podstawie transkrypcji. TBD: ffprobe dla realnego czasu."""
+def _probe_media(filename: str, mode: str, audio_path: Optional[str] = None) -> MediaInfo:
+    """Ingest. Czas trwania: w trybie mock staly (mock_data); w trybie api realny
+    przez ffprobe (bez API), a gdy niedostepny - 0 i dopelnienie z transkrypcji."""
     ext = os.path.splitext(filename or "")[1].lower()
     kind = SourceKind.audio if ext in AUDIO_EXT else SourceKind.video
-    duration = MOCK_DURATION_MS if mode == "mock" else 0
+    duration = MOCK_DURATION_MS if mode == "mock" else probe_duration_ms(audio_path)
     return MediaInfo(filename=filename or "sample", source_kind=kind,
                      duration_ms=duration, language="pl")
 
@@ -37,7 +37,7 @@ def _probe_media(filename: str, mode: str) -> MediaInfo:
 def run_pipeline(filename: str, audio_path: Optional[str] = None) -> CaptionDocument:
     mode = (settings.pipeline_mode or "mock").lower()
     providers = select_providers(settings)
-    media = _probe_media(filename, mode)
+    media = _probe_media(filename, mode, audio_path)
 
     # Obsługa pliku wejściowego (audio/wideo) — istotne tylko w trybie api.
     prepared = None

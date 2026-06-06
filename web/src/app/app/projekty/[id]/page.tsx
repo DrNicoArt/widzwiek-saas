@@ -2,34 +2,34 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { getProject, getProjectDoc } from "@/lib/projects";
+import { useProject } from "@/lib/useProject";
 import { Badge } from "@/components/ui/Badge";
 import Icon from "@/components/ui/Icon";
 import { fadeUp, stagger, inView } from "@/lib/motion";
 
+function Note({ icon, text }: { icon: "clock" | "alert"; text: string }) {
+  return (
+    <div className="rounded-2xl border border-hair/70 bg-white/80 p-6 text-center shadow-card">
+      <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name={icon} size={24} /></span>
+      <p className="text-sm text-muted">{text}</p>
+    </div>
+  );
+}
+
 export default function ProjectSummary() {
   const { id } = useParams<{ id: string }>();
-  const project = getProject(id);
-  const doc = getProjectDoc(id);
+  const { loading, found, doc } = useProject(id);
   const base = `/app/projekty/${id}`;
 
-  if (!project) return <p className="text-sm text-muted">Nie znaleziono materiału.</p>;
-
-  if (!doc) {
-    return (
-      <motion.div initial="hidden" animate="show" variants={fadeUp} className="rounded-2xl border border-hair/70 bg-white/80 p-6 text-center shadow-card">
-        <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name="clock" size={24} /></span>
-        <p className="text-sm font-medium text-graphite">Materiał jest w trakcie przetwarzania</p>
-        <p className="mt-1 text-sm text-muted">Wynik (napisy, mówcy, raport, eksport) pojawi się po zakończeniu.</p>
-      </motion.div>
-    );
-  }
+  if (loading) return <Note icon="clock" text="Wczytywanie materiału…" />;
+  if (!found) return <Note icon="alert" text="Nie znaleziono materiału." />;
+  if (!doc) return <Note icon="clock" text="Materiał jest w trakcie przetwarzania. Wynik pojawi się po zakończeniu." />;
 
   const cards = [
     { href: `${base}/napisy`, icon: "captions" as const, title: "Napisy", desc: `${doc.cues.length} segmentów z timingiem i statusem zgodności` },
     { href: `${base}/mowcy`, icon: "users" as const, title: "Mówcy i dźwięki", desc: `${doc.speakers.length} mówców + opisy dźwięków niewerbalnych` },
     { href: `${base}/raport`, icon: "shield" as const, title: "Raport WCAG", desc: doc.wcag.compliant ? "Spełnia WCAG 2.1 AA: TAK" : "Wymaga poprawek" },
-    { href: `${base}/eksporty`, icon: "download" as const, title: "Eksporty", desc: "Pobierz SRT i VTT" },
+    { href: `${base}/eksporty`, icon: "download" as const, title: "Eksporty", desc: "Pobierz SRT, VTT, TXT, JSON" },
   ];
 
   return (
@@ -42,7 +42,6 @@ export default function ProjectSummary() {
         </div>
         <Badge tone={doc.wcag.compliant ? "ok" : "err"}>{doc.wcag.compliant ? "WCAG TAK" : "WCAG NIE"}</Badge>
       </motion.div>
-
       <div className="grid gap-4 sm:grid-cols-2">
         {cards.map((c) => (
           <motion.div key={c.title} variants={fadeUp}>

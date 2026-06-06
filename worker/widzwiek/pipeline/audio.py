@@ -71,3 +71,20 @@ def ensure_audio(input_path: str, filename: str) -> PreparedAudio:
         raise RuntimeError(f"Ekstrakcja audio z wideo (ffmpeg) nie powiodła się: {stderr}") from exc
 
     return PreparedAudio(path=out_path, cleanup=True, extracted=True)
+
+
+def probe_duration_ms(path: Optional[str]) -> int:
+    """Realny czas trwania pliku przez ffprobe (bez API). 0 gdy brak ffprobe/pliku."""
+    if not path or not os.path.exists(path):
+        return 0
+    if shutil.which("ffprobe") is None:
+        return 0
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            capture_output=True, text=True, timeout=20,
+        )
+        return int(float(out.stdout.strip()) * 1000)
+    except Exception:  # noqa: BLE001
+        return 0
