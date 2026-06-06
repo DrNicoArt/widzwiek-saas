@@ -46,7 +46,7 @@ export default function ProjectSummary() {
       <div className="grid gap-4 sm:grid-cols-2">
         {cards.map((c) => (
           <motion.div key={c.title} variants={fadeUp}>
-            <Link href={c.href} className="focusring group flex items-center gap-4 rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm transition-colors hover:border-brand-200">
+            <Link href={c.href} className="spotlight focusring group flex items-center gap-4 rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm transition-all hover:border-brand-200 hover:shadow-lift">
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name={c.icon} size={20} /></span>
               <div className="min-w-0 flex-1"><p className="text-sm font-medium text-graphite">{c.title}</p><p className="mt-0.5 text-xs text-muted">{c.desc}</p></div>
               <Icon name="chevron" size={18} className="text-muted transition-transform group-hover:translate-x-0.5" />

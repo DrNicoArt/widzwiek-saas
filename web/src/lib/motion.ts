@@ -54,6 +54,11 @@ export const pressTap = { scale: 0.98 };
 export const inView = { once: true, amount: 0.2 } as const;
 
 // Wejście całej strony przy zmianie route (template.tsx). Blur+slide+fade — premium, ale lekkie.
+export const revealUp: Variants = {
+  hidden: { opacity: 0, y: 22, filter: "blur(8px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+};
+
 export const pageEnter: Variants = {
   hidden: { opacity: 0, y: 18, filter: "blur(7px)" },
   show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },

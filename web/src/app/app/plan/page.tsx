@@ -80,7 +80,7 @@ export default function Plan() {
           <h3 className="mb-3 text-sm font-medium text-graphite">Plany (kierunkowo — ceny TBD)</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {PLAN_TIERS.map((t) => (
-              <div key={t.name} className={`rounded-2xl border p-5 shadow-card backdrop-blur-sm ${t.highlight ? "border-brand-300 bg-brand-50/40" : "border-hair/70 bg-white/80"}`}>
+              <div key={t.name} className={`spotlight rounded-2xl border p-5 shadow-card backdrop-blur-sm transition-shadow hover:shadow-lift ${t.highlight ? "border-brand-300 bg-brand-50/40" : "border-hair/70 bg-white/80"}`}>
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-medium text-graphite">{t.name}</h4>
                   {t.highlight && <Badge tone="info">popularny</Badge>}

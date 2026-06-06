@@ -46,6 +46,11 @@ export default function SceneBackground() {
         className="absolute h-[52vh] w-[52vh] -translate-x-1/2 -translate-y-1/2 rounded-full animate-aurora"
         style={{ left: accX, top: accY, background: "radial-gradient(closest-side, rgba(251,94,38,0.10), rgba(251,94,38,0))" }}
       />
+      {/* trzecia plama mgly (fiolet) - bogatsza aurora, wolny dryf */}
+      <div className="absolute left-[8%] top-[18%] h-[40vh] w-[40vh] rounded-full animate-meshA"
+        style={{ background: "radial-gradient(closest-side, rgba(124,58,237,0.07), rgba(124,58,237,0))" }} aria-hidden />
+      <div className="absolute right-[12%] bottom-[14%] h-[36vh] w-[36vh] rounded-full animate-meshB"
+        style={{ background: "radial-gradient(closest-side, rgba(0,87,168,0.07), rgba(0,87,168,0))" }} aria-hidden />
       {/* OFICJALNY sygnet jako watermark systemu */}
       <motion.img
         src="/brand/sygnet.svg" alt="" draggable={false}

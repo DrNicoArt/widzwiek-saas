@@ -27,6 +27,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <WorkerCtx.Provider value={workerUp}>
       <SceneBackground />
+      <div className="grain" aria-hidden />
       <AnimatePresence>{booting && <Splash key="splash" />}</AnimatePresence>
       <div className="flex min-h-dvh">
         <Sidebar workerUp={workerUp} />

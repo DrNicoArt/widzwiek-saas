@@ -17,8 +17,8 @@ export default function ProjectCard({ p }: { p: DemoProject }) {
   const base = `/app/projekty/${p.id}`;
   const processing = p.status === "processing";
   return (
-    <motion.div variants={fadeUp} whileHover={cardHover}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-hair/70 bg-white/70 shadow-card backdrop-blur-sm">
+    <motion.div variants={fadeUp} whileHover={cardHover} whileTap={{ scale: 0.985 }}
+      className="spotlight group flex flex-col overflow-hidden rounded-2xl border border-hair/70 bg-white/70 shadow-card backdrop-blur-sm transition-shadow hover:shadow-lift">
       {/* Klikalny obszar materiału */}
       <Link href={base} className="focusring block text-left">
         <div className="relative h-24 overflow-hidden" style={{ background: `linear-gradient(135deg, ${p.accent}14, ${p.accent}05)` }}>
