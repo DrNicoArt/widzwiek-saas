@@ -2,7 +2,7 @@
 // Bogaty edytor napisow (offline): mowcy (pelna paleta + kontrola kontrastu WCAG), styl (font z listy,
 // rozmiar px, pozycja, tlo, limity), cue (tekst/czas/mowca/typ/podzial/dodaj/usun), biblioteka dzwiekow,
 // styl per-slowo (kolor/pogrubienie) + podglad na zywo. Zapis przez worker -> rewalidacja WCAG.
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import type { CaptionDocument, CaptionStyle, CueKind, CueToken, Speaker } from "@/lib/contract";
 import { DEFAULT_STYLE, FONTS, SIZE_PRESETS, fontCss, contrastRatio, msToTimecode } from "@/lib/contract";
@@ -60,6 +60,9 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
   const [sel, setSel] = useState(0);
   const [activeWord, setActiveWord] = useState(0);
   const [issues, setIssues] = useState(doc.wcag?.issues ?? []);
+  type Snap = { speakers: Speaker[]; rows: Row[]; style: CaptionStyle };
+  const [past, setPast] = useState<Snap[]>([]);
+  const [future, setFuture] = useState<Snap[]>([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ tone: Tone; text: string } | null>(null);
 
@@ -78,15 +81,26 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
   const errCount = issues.filter((i) => i.severity === "error").length;
   const warnCount = issues.filter((i) => i.severity === "warning").length;
 
+  const snapshot = useCallback(() => { setPast((p) => [...p.slice(-60), { speakers, rows, style }]); setFuture([]); }, [speakers, rows, style]);
+  const undo = useCallback(() => {
+    setPast((p) => { if (!p.length) return p; const prev = p[p.length - 1]; setFuture((fz) => [{ speakers, rows, style }, ...fz].slice(0, 60)); setSpeakers(prev.speakers); setRows(prev.rows); setStyle(prev.style); return p.slice(0, -1); });
+  }, [speakers, rows, style]);
+  const redo = useCallback(() => {
+    setFuture((fz) => { if (!fz.length) return fz; const nx = fz[0]; setPast((p) => [...p, { speakers, rows, style }].slice(-60)); setSpeakers(nx.speakers); setRows(nx.rows); setStyle(nx.style); return fz.slice(1); });
+  }, [speakers, rows, style]);
+
   function addCue() {
+    snapshot();
     const last = rows[rows.length - 1]; const start = last ? last.end_ms + 500 : 0;
     setRows((r) => [...r, { id: uid("e"), start_ms: start, end_ms: start + 2000, text: "Nowy napis", kind: "speech", speaker_id: speakers[0]?.id ?? null }]);
   }
   function addSound(label: string) {
+    snapshot();
     const last = rows[rows.length - 1]; const start = last ? last.end_ms + 300 : 0;
     setRows((r) => [...r, { id: uid("e"), start_ms: start, end_ms: start + 1500, text: label, kind: "sound", speaker_id: null }]);
   }
   function splitCue(id: string) {
+    snapshot();
     setRows((r) => {
       const i = r.findIndex((x) => x.id === id); if (i < 0) return r;
       const c = r[i]; const mid = Math.round((c.start_ms + c.end_ms) / 2); const words = c.text.split(/\s+/); const h = Math.ceil(words.length / 2);
@@ -96,6 +110,7 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
     });
   }
   function autofixTiming() {
+    snapshot();
     setRows((r) => {
       const sorted = [...r].sort((a, b) => a.start_ms - b.start_ms);
       let prevEnd = -Infinity;
@@ -108,8 +123,23 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
       });
     });
   }
-  function addSpeaker() { setSpeakers((s) => [...s, { id: uid("S"), label: `Mówca ${s.length + 1}`, color: PRESETS[s.length % PRESETS.length] }]); }
-  function removeSpeaker(id: string) { setSpeakers((s) => s.filter((x) => x.id !== id)); setRows((r) => r.map((x) => (x.speaker_id === id ? { ...x, speaker_id: null } : x))); }
+  function addSpeaker() { snapshot(); setSpeakers((s) => [...s, { id: uid("S"), label: `Mówca ${s.length + 1}`, color: PRESETS[s.length % PRESETS.length] }]); }
+  function removeSpeaker(id: string) { snapshot(); setSpeakers((s) => s.filter((x) => x.id !== id)); setRows((r) => r.map((x) => (x.speaker_id === id ? { ...x, speaker_id: null } : x))); }
+  function mergeSpeaker(fromId: string, toId: string) {
+    if (!toId || fromId === toId) return;
+    snapshot();
+    setRows((r) => r.map((x) => (x.speaker_id === fromId ? { ...x, speaker_id: toId } : x)));
+    setSpeakers((s) => s.filter((x) => x.id !== fromId));
+  }
+  function mergeWithNext(id: string) {
+    snapshot();
+    setRows((r) => {
+      const i = r.findIndex((x) => x.id === id); if (i < 0 || i >= r.length - 1) return r;
+      const a = r[i], b = r[i + 1];
+      const merged = { ...a, end_ms: Math.max(a.end_ms, b.end_ms), text: `${a.text} ${b.text}`.trim(), tokens: undefined };
+      return [...r.slice(0, i), merged, ...r.slice(i + 2)];
+    });
+  }
 
   // --- styl per-slowo dla wybranego cue ---
   const tokensOf = (r: Row): Tok[] => r.tokens && r.tokens.length ? r.tokens : r.text.split(/\s+/).filter(Boolean).map((t) => ({ text: t }));
@@ -125,6 +155,19 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
     const base = current.kind === "sound" ? "#e5e7eb" : sp ? sp.color : "#f5f5f5";
     return { toks: tokensOf(current), base, label: current.kind === "sound" ? null : sp?.label ?? null, sound: current.kind === "sound" };
   }, [current, speakers]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === "s") { e.preventDefault(); save(); }
+      else if (k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [undo, redo, rows, speakers, style]);
 
   async function save() {
     setSaving(true); setMsg(null);
@@ -236,6 +279,12 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
                   {PRESETS.map((c) => <button key={c} type="button" aria-label={`kolor ${c}`} onClick={() => setSpeakers((all) => all.map((x) => (x.id === s.id ? { ...x, color: c } : x)))} className={`h-5 w-5 rounded-full ring-2 ${toHex(s.color) === c ? "ring-brand-600" : "ring-transparent"}`} style={{ background: c, border: "1px solid #ccc" }} />)}
                 </div>
                 <Badge tone={cb.tone} icon={cb.tone === "ok" ? "check" : "alert"}>{cb.label}</Badge>
+                {speakers.length > 1 && (
+                  <select defaultValue="" onChange={(e) => { mergeSpeaker(s.id, e.target.value); e.currentTarget.value = ""; }} aria-label="Scal w innego mówcę" title="Scal w..." className="focusring rounded-lg border border-hair bg-white px-2 py-1 text-[11px] text-muted">
+                    <option value="">scal w…</option>
+                    {speakers.filter((x) => x.id !== s.id).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                  </select>
+                )}
                 <button onClick={() => removeSpeaker(s.id)} aria-label="Usuń mówcę" className="focusring rounded-lg p-1.5 text-muted hover:bg-err/10 hover:text-err"><Icon name="trash" size={16} /></button>
               </div>
             );
@@ -260,6 +309,10 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
           <h3 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="captions" size={16} /> Napisy ({rows.length})</h3>
           <div className="flex items-center gap-3">
             {msg && <span className={`text-xs ${msg.tone === "ok" ? "text-ok" : msg.tone === "err" ? "text-err" : "text-warn"}`}>{msg.text}</span>}
+            <div className="inline-flex overflow-hidden rounded-lg border border-hair">
+              <button onClick={undo} disabled={!past.length} aria-label="Cofnij (Ctrl+Z)" title="Cofnij (Ctrl+Z)" className="focusring px-2 py-1.5 text-graphite disabled:opacity-40 hover:bg-slate-50"><Icon name="refresh" size={15} className="-scale-x-100" /></button>
+              <button onClick={redo} disabled={!future.length} aria-label="Ponów (Ctrl+Y)" title="Ponów (Ctrl+Y)" className="focusring border-l border-hair px-2 py-1.5 text-graphite disabled:opacity-40 hover:bg-slate-50"><Icon name="refresh" size={15} /></button>
+            </div>
             <Badge tone={errCount ? "err" : warnCount ? "warn" : "ok"} icon={errCount ? "alert" : "check"}>{errCount} bł. · {warnCount} ostrz.</Badge>
             <Button variant="secondary" icon="clock" onClick={autofixTiming}>Auto-popraw timing</Button>
             <Button variant="secondary" icon="captions" onClick={addCue}>Dodaj napis</Button>
@@ -274,7 +327,8 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
                 <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-muted">{msToTimecode(r.start_ms)}</span>
                 <input value={r.text} onClick={(e) => e.stopPropagation()} onChange={(e) => patch(r.id, { text: e.target.value, tokens: undefined })} className={`focusring min-w-[180px] flex-1 rounded-lg border border-hair bg-white px-2.5 py-1.5 text-sm text-graphite ${r.kind === "sound" ? "italic text-muted" : ""}`} />
                 <button onClick={(e) => { e.stopPropagation(); splitCue(r.id); }} aria-label="Podziel" title="Podziel napis" className="focusring rounded-lg p-1.5 text-muted hover:bg-brand-50 hover:text-brand-700"><Icon name="chevron" size={16} /></button>
-                <button onClick={(e) => { e.stopPropagation(); setRows((all) => all.filter((x) => x.id !== r.id)); }} aria-label="Usuń" className="focusring rounded-lg p-1.5 text-muted hover:bg-err/10 hover:text-err"><Icon name="trash" size={16} /></button>
+                <button onClick={(e) => { e.stopPropagation(); mergeWithNext(r.id); }} aria-label="Scal z następnym" title="Scal z następnym" className="focusring rounded-lg p-1.5 text-muted hover:bg-brand-50 hover:text-brand-700"><Icon name="check" size={16} /></button>
+                <button onClick={(e) => { e.stopPropagation(); snapshot(); setRows((all) => all.filter((x) => x.id !== r.id)); }} aria-label="Usuń" className="focusring rounded-lg p-1.5 text-muted hover:bg-err/10 hover:text-err"><Icon name="trash" size={16} /></button>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2 pl-14 text-[11px] text-muted" onClick={(e) => e.stopPropagation()}>
                 <label className="flex items-center gap-1">start<input type="number" step={0.1} value={sec(r.start_ms)} onChange={(e) => patch(r.id, { start_ms: parseFloat(e.target.value || "0") * 1000 })} className="focusring w-16 rounded border border-hair px-1.5 py-0.5 tabular-nums" /></label>
