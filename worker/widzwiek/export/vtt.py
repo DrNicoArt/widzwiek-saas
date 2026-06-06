@@ -24,15 +24,24 @@ def _ts(ms: int) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 
+_FONT_CSS = {"sans": "Arial, sans-serif", "serif": "Georgia, serif", "mono": "monospace"}
+_SIZE_CSS = {"sm": "80%", "md": "100%", "lg": "125%"}
+
+
 def _style_block(doc: CaptionDocument) -> str:
-    rules = []
+    st = doc.style
+    base = (f"font-family: {_FONT_CSS.get(st.font_family, _FONT_CSS['sans'])}; "
+            f"font-size: {_SIZE_CSS.get(st.font_size, '100%')}; "
+            + ("background: rgba(0,0,0,0.75);" if st.background else "background: transparent;"))
+    rules = [f"::cue {{ {base} }}"]
     for sp in doc.speakers:
         css = _COLOR_CSS.get(sp.color, "#ffffff")
-        # dopasowanie po atrybucie voice
         rules.append(f'::cue(v[voice="{sp.label}"]) {{ color: {css}; }}')
-    if not rules:
-        return ""
     return "STYLE\n" + "\n".join(rules) + "\n\n"
+
+
+def _cue_settings(doc: CaptionDocument) -> str:
+    return " line:5%" if doc.style.position == "top" else ""
 
 
 def to_vtt(doc: CaptionDocument) -> str:
@@ -48,7 +57,7 @@ def to_vtt(doc: CaptionDocument) -> str:
             if sp:
                 # voice tag niesie etykietę + (przez STYLE) kolor mówcy
                 text = f"<v {sp.label}>{text}</v>"
-        block = f"{cue.index}\n{_ts(cue.start_ms)} --> {_ts(cue.end_ms)}\n{text}"
+        block = f"{cue.index}\n{_ts(cue.start_ms)} --> {_ts(cue.end_ms)}{_cue_settings(doc)}\n{text}"
         blocks.append(block)
 
     return header + "\n\n".join(blocks) + "\n"

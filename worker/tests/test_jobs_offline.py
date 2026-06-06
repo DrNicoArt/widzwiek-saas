@@ -88,3 +88,42 @@ def test_storage_usage_endpoint():
         assert k in data
     assert data["limit_bytes"] > 0
     assert isinstance(data["over_limit"], bool)
+
+
+def test_style_default_and_wrap_respects_limits():
+    from widzwiek.pipeline import formatter
+    # max 1 linia -> wszystko w jednej
+    assert len(formatter.wrap_lines("alfa beta gamma delta", max_chars=10, max_lines=1)) == 1
+    # waski limit, 2 linie
+    out = formatter.wrap_lines("alfa beta gamma delta epsilon", max_chars=12, max_lines=2)
+    assert len(out) <= 2
+    assert " ".join(out).split() == "alfa beta gamma delta epsilon".split()  # nic nie zgubione
+
+
+def test_vtt_embeds_style_and_position():
+    from widzwiek.export import to_vtt
+    from widzwiek.contracts import CaptionDocument, MediaInfo, SourceKind, CaptionStyle, Speaker, Cue, CueKind
+    doc = CaptionDocument(
+        media=MediaInfo(filename="a.mp3", source_kind=SourceKind.audio, duration_ms=2000),
+        speakers=[Speaker(id="S1", label="Lektor", color="yellow")],
+        style=CaptionStyle(font_family="serif", font_size="lg", position="top", background=False),
+        cues=[Cue(id="c1", index=1, start_ms=0, end_ms=2000, kind=CueKind.speech, speaker_id="S1", lines=["Czesc"], text="Czesc")],
+    )
+    vtt = to_vtt(doc)
+    assert "STYLE" in vtt and "::cue" in vtt
+    assert "Georgia" in vtt              # serif
+    assert "background: transparent" in vtt
+    assert "line:5%" in vtt              # pozycja top
+
+
+def test_update_with_style_rewraps_to_max_chars():
+    job = _upload()
+    jid = job["id"]
+    doc = client.get(f"/api/jobs/{jid}").json()["result"]
+    doc["style"]["max_chars_per_line"] = 15
+    doc["style"]["max_lines"] = 2
+    doc["cues"][1]["text"] = "alfa beta gamma delta epsilon zeta eta"
+    out = client.put(f"/api/jobs/{jid}", json=doc).json()["result"]
+    for c in out["cues"]:
+        assert len(c["lines"]) <= 2
+    assert out["style"]["max_chars_per_line"] == 15

@@ -110,12 +110,23 @@ class DocumentMeta(BaseModel):
     pipeline: PipelineMeta = Field(default_factory=PipelineMeta)
 
 
+class CaptionStyle(BaseModel):
+    """Prezentacja napisow (offline, bez AI). Trafia do podgladu i eksportu VTT."""
+    font_family: str = "sans"          # sans | serif | mono
+    font_size: str = "md"              # sm | md | lg
+    position: str = "bottom"           # bottom | top
+    background: bool = True            # plecek pod tekstem
+    max_chars_per_line: int = Field(default=42, ge=10, le=80)
+    max_lines: int = Field(default=2, ge=1, le=3)
+
+
 class CaptionDocument(BaseModel):
     schema_version: Literal["1.0"] = SCHEMA_VERSION
     media: MediaInfo
     speakers: list[Speaker] = Field(default_factory=list)
     cues: list[Cue] = Field(default_factory=list)
     wcag: WcagReport = Field(default_factory=WcagReport)
+    style: CaptionStyle = Field(default_factory=CaptionStyle)
     meta: DocumentMeta = Field(default_factory=DocumentMeta)
 
     def speaker_by_id(self, speaker_id: Optional[str]) -> Optional[Speaker]:

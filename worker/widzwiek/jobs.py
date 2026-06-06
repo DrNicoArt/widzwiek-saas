@@ -23,7 +23,7 @@ def normalize_document(doc: CaptionDocument) -> CaptionDocument:
     for i, c in enumerate(cues, start=1):
         text = (c.text or " ".join(c.lines)).strip()
         if c.kind == CueKind.speech:
-            lines = formatter.wrap_two_lines(text)
+            lines = formatter.wrap_lines(text, doc.style.max_chars_per_line, doc.style.max_lines)
         else:
             lines = [text]
         fixed.append(c.model_copy(update={"index": i, "lines": lines, "text": text}))

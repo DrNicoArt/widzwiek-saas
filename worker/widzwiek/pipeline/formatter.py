@@ -35,6 +35,30 @@ def wrap_two_lines(text: str, max_chars: int = rules.MAX_CHARS_PER_LINE) -> list
     return [left, right]
 
 
+def wrap_lines(text: str, max_chars: int = rules.MAX_CHARS_PER_LINE, max_lines: int = 2) -> list[str]:
+    """Greedy zawijanie na <= max_lines linii o szerokosci <= max_chars.
+    Nadmiar laczy w ostatnia dozwolona linie (nic nie gubimy)."""
+    words = text.split()
+    if not words:
+        return [""]
+    lines: list[str] = []
+    cur = ""
+    for w in words:
+        if not cur:
+            cur = w
+        elif len(cur) + 1 + len(w) <= max_chars:
+            cur += " " + w
+        else:
+            lines.append(cur); cur = w
+    if cur:
+        lines.append(cur)
+    if len(lines) <= max_lines:
+        return lines
+    head = lines[: max_lines - 1]
+    tail = " ".join(lines[max_lines - 1:])
+    return head + [tail]
+
+
 def build_cues(speech, sounds):
     raw = []
     for seg in speech:
