@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { DemoProject } from "@/lib/mockData";
@@ -12,14 +13,15 @@ const STATUS: Record<DemoProject["status"], { tone: Tone; label: string }> = {
   review: { tone: "warn", label: "do poprawy" },
 };
 
-export default function ProjectCard({ p }: { p: DemoProject }) {
+export default function ProjectCard({ p, onDelete }: { p: DemoProject; onDelete?: (id: string) => void }) {
   const s = STATUS[p.status];
   const base = `/app/projekty/${p.id}`;
   const processing = p.status === "processing";
+  const [confirm, setConfirm] = useState(false);
+
   return (
     <motion.div variants={fadeUp} whileHover={cardHover} whileTap={{ scale: 0.985 }}
       className="spotlight group flex flex-col overflow-hidden rounded-2xl border border-hair/70 bg-white/70 shadow-card backdrop-blur-sm transition-shadow hover:shadow-lift">
-      {/* Klikalny obszar materiału */}
       <Link href={base} className="focusring block text-left">
         <div className="relative h-24 overflow-hidden" style={{ background: `linear-gradient(135deg, ${p.accent}14, ${p.accent}05)` }}>
           <svg viewBox="0 0 400 96" preserveAspectRatio="none" className="absolute inset-0 h-full w-full opacity-50" aria-hidden>
@@ -39,9 +41,14 @@ export default function ProjectCard({ p }: { p: DemoProject }) {
         </div>
       </Link>
 
-      {/* Akcje — bez zagnieżdżania w linku materiału */}
       <div className="mt-3 flex items-center gap-1.5 border-t border-hair/50 px-4 py-2.5">
-        {processing ? (
+        {confirm ? (
+          <>
+            <span className="flex-1 text-xs text-graphite">Usunąć materiał?</span>
+            <button onClick={() => { onDelete?.(p.id); setConfirm(false); }} className="focusring rounded-lg bg-err px-2.5 py-1.5 text-xs font-medium text-white hover:bg-err/90">Usuń</button>
+            <button onClick={() => setConfirm(false)} className="focusring rounded-lg border border-hair px-2.5 py-1.5 text-xs font-medium text-graphite hover:bg-slate-50">Anuluj</button>
+          </>
+        ) : processing ? (
           <Link href={base} className="focusring inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-50">
             <Icon name="clock" size={14} /> Zobacz postęp
           </Link>
@@ -50,12 +57,9 @@ export default function ProjectCard({ p }: { p: DemoProject }) {
             <Link href={base} className="focusring inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-2 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100">
               <Icon name="external" size={14} /> Otwórz
             </Link>
-            <Link href={`${base}/raport`} aria-label="Raport WCAG" title="Raport WCAG" className="focusring grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-slate-100 hover:text-brand-700">
-              <Icon name="shield" size={16} />
-            </Link>
-            <Link href={`${base}/eksporty`} aria-label="Eksporty" title="Eksporty" className="focusring grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-slate-100 hover:text-brand-700">
-              <Icon name="download" size={16} />
-            </Link>
+            <Link href={`${base}/raport`} aria-label="Raport WCAG" title="Raport WCAG" className="focusring grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-slate-100 hover:text-brand-700"><Icon name="shield" size={16} /></Link>
+            <Link href={`${base}/eksporty`} aria-label="Eksporty" title="Eksporty" className="focusring grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-slate-100 hover:text-brand-700"><Icon name="download" size={16} /></Link>
+            {onDelete && <button onClick={() => setConfirm(true)} aria-label="Usuń materiał" title="Usuń" className="focusring grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-err/10 hover:text-err"><Icon name="trash" size={16} /></button>}
           </>
         )}
       </div>

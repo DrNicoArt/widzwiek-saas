@@ -98,6 +98,21 @@ class JobStore:
         self._persist(job)
         return job
 
+    def storage_usage(self) -> dict:
+        """Zuzycie magazynu (offline): liczba materialow + bajty na dysku + limit."""
+        used = 0
+        d = settings.storage_dir
+        if d and os.path.isdir(d):
+            for name in os.listdir(d):
+                if name.endswith(".json"):
+                    try:
+                        used += os.path.getsize(os.path.join(d, name))
+                    except OSError:
+                        pass
+        limit = max(1, settings.storage_limit_mb) * 1024 * 1024
+        return {"count": len(self._jobs), "used_bytes": used, "limit_bytes": limit,
+                "over_limit": used >= limit}
+
     def _persist(self, job: Job) -> None:
         if not settings.storage_dir:
             return

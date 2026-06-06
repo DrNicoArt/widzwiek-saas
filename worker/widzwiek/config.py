@@ -32,6 +32,7 @@ class Settings:
     openai_transcription_model: str = os.getenv("OPENAI_TRANSCRIPTION_MODEL", "whisper-1")
 
     storage_dir: str = os.getenv("WIDZWIEK_STORAGE_DIR", "./storage")
+    storage_limit_mb: int = int(os.getenv("WIDZWIEK_STORAGE_LIMIT_MB", "200"))
 
 
 settings = Settings()

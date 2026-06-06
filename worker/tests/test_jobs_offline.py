@@ -80,3 +80,11 @@ def test_normalize_rewraps_and_recomputes_duration():
     assert [c.index for c in out.cues] == [1, 2]
     assert out.cues[0].id == "c1"           # posortowane wg startu
     assert out.media.duration_ms == 6000    # przeliczony czas
+
+
+def test_storage_usage_endpoint():
+    data = client.get("/api/storage").json()
+    for k in ("count", "used_bytes", "limit_bytes", "over_limit"):
+        assert k in data
+    assert data["limit_bytes"] > 0
+    assert isinstance(data["over_limit"], bool)

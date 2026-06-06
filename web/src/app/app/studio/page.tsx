@@ -71,6 +71,15 @@ function StudioInner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
   const pick = () => inputRef.current?.click();
+  const MAX_MB = 200;
+  function pickFile(f: File | null) {
+    setSample(false);
+    if (!f) { setFile(null); return; }
+    const okType = f.type.startsWith("audio/") || f.type.startsWith("video/") || /\.(mp3|wav|m4a|mp4|mov|mkv|aac|ogg|flac|webm)$/i.test(f.name);
+    if (!okType) { setFile(null); setError("Nieobsługiwany format. Wgraj audio lub wideo (MP3, WAV, M4A, MP4, MOV...)."); return; }
+    if (f.size > MAX_MB * 1024 * 1024) { setFile(null); setError(`Plik za duży (limit ${MAX_MB} MB w demo).`); return; }
+    setError(null); setFile(f);
+  }
 
   function runSample() {
     setError(null); setFile(null); setSample(true); setPhase("processing");
@@ -111,7 +120,7 @@ function StudioInner() {
             <L n={1}>Materiał</L>
             <div
               onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
-              onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) { setFile(f); setSample(false); } }}
+              onDrop={(e) => { e.preventDefault(); setDrag(false); pickFile(e.dataTransfer.files?.[0] ?? null); }}
               onClick={pick} role="button" tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } }}
               className={["focusring relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200",
@@ -119,7 +128,7 @@ function StudioInner() {
               <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-600 text-white shadow-lift"><Icon name="upload" size={28} /></span>
               <p className="mt-4 text-[15px] font-medium text-graphite">Przeciągnij plik lub kliknij, aby wybrać</p>
               <p className="mt-1 text-xs text-muted">MP4, MOV, MP3, WAV, M4A — audio lub wideo</p>
-              <input ref={inputRef} type="file" accept="audio/*,video/*" className="hidden" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setSample(false); }} />
+              <input ref={inputRef} type="file" accept="audio/*,video/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
             </div>
 
             {!sample && !file && (

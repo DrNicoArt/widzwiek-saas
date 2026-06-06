@@ -38,6 +38,17 @@ export async function getJob(id: string): Promise<Job> {
   return res.json();
 }
 
+export interface StorageInfo { count: number; used_bytes: number; limit_bytes: number; over_limit: boolean; }
+
+export async function getStorage(): Promise<StorageInfo | null> {
+  try {
+    const res = await fetch(`${WORKER_URL}/api/storage`, { cache: "no-store" });
+    return res.ok ? res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function listJobs(): Promise<Job[]> {
   const res = await fetch(`${WORKER_URL}/api/jobs`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Nie udało się pobrać listy materiałów (${res.status}).`);

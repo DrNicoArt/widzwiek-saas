@@ -85,6 +85,8 @@ def update_config(cfg: ConfigUpdate) -> dict:
 @app.post("/api/jobs", response_model=Job)
 async def create_job(file: UploadFile = File(...)) -> Job:
     """Upload pliku audio/wideo -> utworzenie joba i uruchomienie pipeline'u."""
+    if store.storage_usage()["over_limit"]:
+        raise HTTPException(status_code=413, detail="Limit magazynu przekroczony. Usun materialy, aby dodac nowe.")
     job = store.create(filename=file.filename or "upload")
 
     audio_path: Optional[str] = None
@@ -121,6 +123,12 @@ def _require_done(job_id: str) -> Job:
     if not job.result:
         raise HTTPException(status_code=409, detail=f"Job nie jest gotowy (status: {job.status}).")
     return job
+
+
+@app.get("/api/storage")
+def storage() -> dict:
+    """Zuzycie magazynu materialow + limit (do paska w UI)."""
+    return store.storage_usage()
 
 
 @app.get("/api/jobs", response_model=list[Job])
