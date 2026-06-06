@@ -60,6 +60,18 @@ export async function deleteJob(id: string): Promise<void> {
   if (!res.ok) throw new Error(`Nie udało się usunąć materiału (${res.status}).`);
 }
 
+export async function importJob(filename: string, document: CaptionDocument): Promise<Job> {
+  const res = await fetch(`${WORKER_URL}/api/jobs/import`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename, document }),
+  });
+  if (!res.ok) {
+    const msg = await res.json().catch(() => null);
+    throw new Error(msg?.detail || `Nie udało się zaimportować napisów (${res.status}).`);
+  }
+  return res.json();
+}
+
 export async function updateDocument(id: string, doc: CaptionDocument): Promise<Job> {
   const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, {
     method: "PUT",

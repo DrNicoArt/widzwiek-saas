@@ -141,3 +141,25 @@ def test_vtt_tokens_per_word():
     assert "#ff0000" in vtt          # klasa koloru tokenu
     assert "<c.wc0>Ala</c>" in vtt or "<b><c.wc0>Ala</c></b>" in vtt or "<c.wc0>Ala</c></b>" in vtt
     assert "<b>" in vtt              # pogrubienie
+
+
+def test_import_job_from_document():
+    payload = {
+        "filename": "moje.srt",
+        "document": {
+            "schema_version": "1.0",
+            "media": {"filename": "moje.srt", "source_kind": "audio", "duration_ms": 0, "language": "pl"},
+            "speakers": [{"id": "S1", "label": "Lektor", "color": "#ffd400"}],
+            "cues": [
+                {"id": "c1", "index": 1, "start_ms": 0, "end_ms": 2000, "kind": "speech", "speaker_id": "S1", "lines": ["Witaj"], "text": "Witaj"},
+                {"id": "c2", "index": 2, "start_ms": 2500, "end_ms": 4000, "kind": "sound", "speaker_id": None, "lines": ["[muzyka]"], "text": "[muzyka]"},
+            ],
+        },
+    }
+    r = client.post("/api/jobs/import", json=payload)
+    assert r.status_code == 200
+    job = r.json()
+    assert job["status"] == "done"
+    assert job["result"]["media"]["duration_ms"] == 4000
+    assert "wcag" in job["result"] and "stats" in job["result"]["wcag"]
+    assert job["id"] in [j["id"] for j in client.get("/api/jobs").json()]

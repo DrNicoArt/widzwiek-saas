@@ -82,6 +82,21 @@ def update_config(cfg: ConfigUpdate) -> dict:
     return _health_dict()
 
 
+class ImportRequest(BaseModel):
+    filename: str = "import"
+    document: CaptionDocument
+
+
+@app.post("/api/jobs/import", response_model=Job)
+def import_job(req: ImportRequest) -> Job:
+    """Import gotowych napisow (SRT/VTT sparsowane na froncie) jako trwaly job.
+    Normalizuje linie wg stylu i waliduje WCAG. Offline, bez AI."""
+    if store.storage_usage()["over_limit"]:
+        raise HTTPException(status_code=413, detail="Limit magazynu przekroczony. Usun materialy, aby dodac nowe.")
+    job = store.create(filename=req.filename)
+    return store.update_document(job, req.document)
+
+
 @app.post("/api/jobs", response_model=Job)
 async def create_job(file: UploadFile = File(...)) -> Job:
     """Upload pliku audio/wideo -> utworzenie joba i uruchomienie pipeline'u."""

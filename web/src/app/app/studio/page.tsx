@@ -4,12 +4,13 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { createJob, getJob } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createJob, getJob, importJob } from "@/lib/api";
 import type { Job } from "@/lib/contract";
 import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
 import { DEMO_DOC } from "@/lib/demoDoc";
 import { probeAudioPresence } from "@/lib/audioProbe";
+import { parseSubtitles } from "@/lib/importSubs";
 import { useWorkerUp } from "@/components/shell/AppShell";
 import PageHeader from "@/components/shell/PageHeader";
 import Section from "@/components/ui/Section";
@@ -63,6 +64,9 @@ function UsageEstimate({ durationMs }: { durationMs: number }) {
 function StudioInner() {
   const workerUp = useWorkerUp();
   const params = useSearchParams();
+  const router = useRouter();
+  const importRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [drag, setDrag] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -89,6 +93,19 @@ function StudioInner() {
   function runSample() {
     setError(null); setFile(null); setSample(true); setPhase("processing");
     setTimeout(() => { setJob(buildSampleJob()); setPhase("done"); }, 900);
+  }
+
+  async function onImport(file: File | null) {
+    if (!file) return;
+    setError(null); setImporting(true);
+    try {
+      const doc = parseSubtitles(await file.text(), file.name);
+      if (!doc.cues.length) throw new Error("Nie znaleziono napisów w pliku (oczekiwano SRT lub VTT).");
+      const job = await importJob(file.name, doc);
+      router.push(`/app/projekty/${job.id}/napisy`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Import nie powiódł się.");
+    } finally { setImporting(false); }
   }
 
   // wejście z ?sample=1 (np. z banera offline / dashboardu)
@@ -142,6 +159,11 @@ function StudioInner() {
                 <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Uruchom demo na przykładzie</Button>
               </div>
             )}
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hair/70 bg-white/60 px-4 py-3">
+              <div className="flex items-center gap-2 text-sm text-graphite"><Icon name="captions" size={18} className="text-brand-600" /> Masz gotowe napisy? Zaimportuj i dopracuj pod WCAG.</div>
+              <Button variant="secondary" icon="upload" loading={importing} disabled={workerUp === false} onClick={() => importRef.current?.click()}>Importuj SRT / VTT</Button>
+              <input ref={importRef} type="file" accept=".srt,.vtt,text/vtt,application/x-subrip" className="hidden" onChange={(e) => onImport(e.target.files?.[0] ?? null)} />
+            </div>
 
             {sample && !file && (
               <div className="mt-4 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
