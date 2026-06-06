@@ -108,10 +108,7 @@ function StudioInner() {
       <div className="space-y-8">
         <Section>
           <motion.div variants={fadeUp} className="relative overflow-hidden rounded-2xl border border-hair/70 bg-white/70 p-6 shadow-card backdrop-blur-sm">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <L n={1}>Materiał</L>
-              <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Użyj przykładowego materiału</Button>
-            </div>
+            <L n={1}>Materiał</L>
             <div
               onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
               onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f) { setFile(f); setSample(false); } }}
@@ -124,6 +121,13 @@ function StudioInner() {
               <p className="mt-1 text-xs text-muted">MP4, MOV, MP3, WAV, M4A — audio lub wideo</p>
               <input ref={inputRef} type="file" accept="audio/*,video/*" className="hidden" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setSample(false); }} />
             </div>
+
+            {!sample && !file && (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
+                <div className="flex items-center gap-2 text-sm text-graphite"><Icon name="sparkles" size={18} className="text-brand-600" /> Nie masz pliku? Uruchom pełne demo na przykładowym materiale.</div>
+                <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Uruchom demo na przykładzie</Button>
+              </div>
+            )}
 
             {sample && !file && (
               <div className="mt-4 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
@@ -144,7 +148,7 @@ function StudioInner() {
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button onClick={handleRun} disabled={!file || busy || workerUp === false} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
-              {workerUp === false && <span className="text-xs text-muted">Worker offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> lub uruchom backend.</span>}
+              {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> lub uruchom go lokalnie.</span>}
             </div>
           </motion.div>
         </Section>

@@ -66,7 +66,7 @@ export default function Przeglad() {
             <span className="pb-1 text-xs text-muted">WCAG 2.1 AA</span>
           </div>
           <p className="mt-2 text-sm text-muted">{DEMO_DOC.wcag.stats.error_count} błędów · {DEMO_DOC.wcag.stats.warning_count} ostrzeżenie · {DEMO_DOC.wcag.stats.cue_count} napisów.</p>
-          <Link href="/app/napisy" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline">Zobacz napisy <Icon name="chevron" size={15} /></Link>
+          <Link href="/app/projekty/p1/raport" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline">Zobacz raport <Icon name="chevron" size={15} /></Link>
         </motion.div>
 
         <motion.div initial="hidden" whileInView="show" viewport={inView} variants={stagger}>

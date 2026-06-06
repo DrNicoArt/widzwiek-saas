@@ -48,9 +48,10 @@ export interface PlanTier {
 }
 export const PLAN_TIERS: PlanTier[] = [
   { name: "Demo", priceLabel: "0 zł", forWhom: "Testy i prezentacje", features: ["Pełny flow w trybie mock", "Eksport SRT/VTT", "Raport WCAG", "Bez pobierania kredytów"] },
-  { name: "Starter", priceLabel: "od X zł / mies.", forWhom: "Freelancerzy, twórcy", features: ["Pula minut/kredytów", "Transkrypcja PL", "Raport WCAG + eksport", "1 użytkownik"], highlight: true },
-  { name: "Pro", priceLabel: "od X zł / mies.", forWhom: "Małe zespoły, agencje", features: ["Więcej minut", "Mówcy + dźwięki (po integracji)", "Historia projektów", "Kilku użytkowników"] },
-  { name: "Business / Uczelnie", priceLabel: "wycena", forWhom: "Instytucje, edukacja", features: ["Faktura / przelew B2B", "Większe limity", "Wsparcie wdrożenia", "Polityka retencji"] },
+  { name: "Starter", priceLabel: "Cena robocza (TBD)", forWhom: "Freelancerzy, twórcy", features: ["Pula minut/kredytów", "Transkrypcja PL", "Raport WCAG + eksport", "1 użytkownik"], highlight: true },
+  { name: "Pro", priceLabel: "Cena robocza (TBD)", forWhom: "Małe zespoły, agencje", features: ["Więcej minut", "Mówcy + dźwięki (po integracji)", "Historia projektów", "Kilku użytkowników"] },
+  { name: "Business", priceLabel: "Wycena", forWhom: "Firmy, agencje", features: ["Duże limity", "Wielu użytkowników", "Priorytetowe wsparcie", "Faktura B2B"] },
+  { name: "Instytucje / Uczelnie", priceLabel: "Wycena", forWhom: "Edukacja, sektor publiczny", features: ["Faktura / przelew", "Polityka retencji", "Wsparcie wdrożenia", "Zgodność WCAG dla instytucji"] },
 ];
 
 // Metody płatności — placeholdery adapterów (provider-agnostic).

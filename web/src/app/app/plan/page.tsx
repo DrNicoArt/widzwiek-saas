@@ -30,7 +30,7 @@ export default function Plan() {
               <h3 className="text-sm font-medium text-graphite">Twój plan</h3>
               <Badge tone="info" icon="sparkles">{DEMO_PLAN.planName}</Badge>
               <Badge tone="neutral">tryb: {DEMO_PLAN.billingMode}</Badge>
-              <Badge tone="warn" icon="plug">provider: {DEMO_PLAN.provider} (mock)</Badge>
+              <Badge tone="warn" icon="shield">Tryb demo — płatności nieaktywne</Badge>
             </div>
             <div className="mt-4 flex items-end justify-between">
               <div>
@@ -78,7 +78,7 @@ export default function Plan() {
         {/* Plany */}
         <motion.div variants={fadeUp}>
           <h3 className="mb-3 text-sm font-medium text-graphite">Plany (kierunkowo — ceny TBD)</h3>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {PLAN_TIERS.map((t) => (
               <div key={t.name} className={`rounded-2xl border p-5 shadow-card backdrop-blur-sm ${t.highlight ? "border-brand-300 bg-brand-50/40" : "border-hair/70 bg-white/80"}`}>
                 <div className="flex items-center justify-between">

@@ -1,14 +1,30 @@
 # Widźwięk — scenariusz prezentacji (demo mock, bez kluczy API)
 
-Demo działa lokalnie, **bez żadnych kluczy API**. Najważniejsze: nawet **bez uruchomionego workera**
-można pokazać pełny wynik — przyciskiem **„Użyj przykładowego materiału"**.
+Demo działa lokalnie, **bez żadnych kluczy API**. Nawet **bez uruchomionego silnika przetwarzania**
+można pokazać pełny wynik — przyciskiem **„Uruchom demo na przykładzie"**.
 
-Realne trasy: `/` (wejście) → `/app` (Przegląd) → `/app/studio` (Nowy materiał) →
-`/app/napisy` · `/app/mowcy` · `/app/eksporty` · `/app/plan` · `/app/integracje` · `/app/ustawienia`.
+## Architektura nawigacji (project-centric)
+Główny sidebar (praca użytkownika): **Przegląd · Nowy materiał · Projekty · Plan i płatności · Ustawienia**.
+Wynik konkretnego materiału żyje wewnątrz projektu jako zakładki:
+
+```
+/app                          Przegląd
+/app/studio                   Nowy materiał
+/app/projekty                 Lista materiałów
+/app/projekty/[id]            Podsumowanie projektu
+/app/projekty/[id]/napisy     Transkrypcja i captions
+/app/projekty/[id]/mowcy      Mówcy i dźwięki niewerbalne
+/app/projekty/[id]/raport     Raport WCAG
+/app/projekty/[id]/eksporty   SRT, VTT (PDF/TXT/JSON — później)
+/app/plan                     Plan, kredyty, metody płatności
+/app/ustawienia               Ogólne / Przetwarzanie / Dostawcy AI / Format / Dane / Płatności / Bezpieczeństwo / Developer
+```
+Dawne globalne ekrany (`/app/napisy`, `/app/mowcy`, `/app/eksporty`) przekierowują do zakładek projektu;
+`/app/integracje` → `Ustawienia → Developer`.
 
 ## 0. Przygotowanie (Windows / PowerShell)
 ```powershell
-# Terminal 1 — worker (opcjonalny dla wariantu „sample")
+# Terminal 1 — silnik przetwarzania (opcjonalny dla wariantu „przykład")
 cd worker; python -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt; copy .env.example .env
 uvicorn widzwiek.main:app --reload --port 8000
@@ -19,36 +35,34 @@ npm run dev   # http://localhost:3000
 
 ---
 
-## Wariant A — szybkie demo (~3 min, bez workera)
-1. **`/app` (Przegląd)** — hero „Napisy zgodne z WCAG — gotowe do publikacji", statystyki, ostatni raport.
-   Kliknij **„Użyj przykładowego materiału"**.
-2. **`/app/studio`** — automatycznie rusza tryb przykładowy: pipeline → pełny wynik (transkrypcja, napisy,
-   mówcy/dźwięki, raport WCAG, eksport). Zwróć uwagę na kartę **szacunku kredytów** („w demo nie pobieramy").
-3. **Raport WCAG** — „Spełnia WCAG 2.1 AA: TAK", score, lista reguł. Najmocniejszy ekran sprzedażowy.
-4. **Eksport** — pobierz **SRT** i **VTT** (realne pliki, generowane lokalnie z `CaptionDocument`).
+## Wariant A — szybkie demo (~3 min, bez silnika)
+1. **`/app` Przegląd** — hero „Napisy zgodne z WCAG — gotowe do publikacji". Kliknij **„Użyj przykładowego materiału"**.
+2. **`/app/studio`** — rusza tryb przykładowy: pipeline → pełny wynik + karta **szacunku kredytów** („w demo nie pobieramy").
+3. **Raport WCAG** — „Spełnia WCAG 2.1 AA: TAK", score, lista reguł — najmocniejszy ekran sprzedażowy.
+4. **Eksport** — pobierz **SRT** i **VTT** (realne pliki z `CaptionDocument`).
 
-> Pointa: „To działa bez backendu i bez kluczy — widzisz docelowy przepływ produktu."
+> Pointa: „Działa bez backendu i bez kluczy — to docelowy przepływ produktu."
 
 ---
 
-## Wariant B — pełne demo (~10 min, z workerem)
-1. **Wejście `/`** (30 s) — logotyp, hasło, pasek funkcji (transkrypcja, mówcy, dźwięki, raport, eksport).
-   „Demo w trybie mock — bez kluczy." → **Otwórz demo**.
-2. **`/app` Przegląd** (1 min) — status **worker online**, badge **tryb demo · mock**, statystyki, skrót raportu,
-   ostatnie projekty z akcjami **Otwórz / Raport / Eksport**.
-3. **`/app/studio` Materiał** (2 min) — wgraj plik **lub** „Użyj przykładowego materiału". Pokaż **szacunek
-   kredytów**. Kliknij **Przetwórz** → pipeline Audio → Transkrypcja → Mówcy → Dźwięki → WCAG → Eksport.
-4. **Wynik krok po kroku** (2 min) — Transkrypcja; **Napisy** z **filtrami** (OK/uwaga/błąd) i długością linii;
-   **Mówcy i dźwięki** (`[oklaski]`/`[muzyka]`) — „to captions, nie subtitles" (WCAG 1.2.2); **Raport WCAG**.
-5. **`/app/eksporty`** (1 min) — duże CTA **Pobierz SRT / Pobierz VTT** + opis formatów (kompatybilność vs web/dostępność).
-6. **`/app/plan` Plan i płatności** (1 min) — plan Demo, kredyty (mock), zużycie miesięczne, plany i metody
-   płatności jako **placeholdery** (provider-agnostic). „Nic nie pobieramy; pokazujemy kierunek monetyzacji."
-7. **`/app/integracje`** (1 min) — pogrupowane integracje, status **architektoniczny** vs **runtime**;
-   „każda usługa za adapterem, demo działa bez żadnej".
-8. **`/app/ustawienia`** (30 s) — przełącznik mock/API + pole klucza (dev/demo; produkcyjnie sekrety w backendzie).
-9. **Stan offline** (opcjonalnie) — ubij workera: baner „Silnik offline — demo działa dalej" + „Zobacz przykład".
-10. **Domknięcie** (30 s) — „Wszystkie zewnętrzne API i billing to placeholdery za interfejsami. Realna transkrypcja:
-    `PIPELINE_MODE=api` + klucz OpenAI + test live na 30–60 s, **bez zmiany kontraktu danych**."
+## Wariant B — pełne demo (~10 min, z silnikiem)
+1. **Wejście `/`** (30 s) — logotyp, hasło, pasek funkcji. „Demo w trybie mock — bez kluczy." → **Otwórz demo**.
+2. **`/app` Przegląd** (1 min) — status online, badge **tryb demo**, statystyki, skrót raportu, ostatnie materiały
+   (karty klikalne: **Otwórz / Raport / Eksport**).
+3. **`/app/studio` Nowy materiał** (2 min) — wgraj plik **lub** „Uruchom demo na przykładzie". Pokaż **szacunek
+   kredytów**. Pipeline Audio → Transkrypcja → Mówcy → Dźwięki → WCAG → Eksport.
+4. **`/app/projekty`** (1 min) — biblioteka materiałów; wejdź w „Konferencja o dostępności 2024".
+5. **Projekt → Podsumowanie** (30 s) — werdykt WCAG + skróty do zakładek (breadcrumb „Projekty / …").
+6. **Projekt → Napisy** (1.5 min) — transkrypcja + captions z **filtrami** (OK/uwaga/błąd) i długością linii.
+   „Podgląd i walidacja, nie edytor."
+7. **Projekt → Mówcy i dźwięki** (1 min) — `[oklaski]`/`[muzyka]` — „to captions, nie subtitles" (WCAG 1.2.2).
+8. **Projekt → Raport WCAG** (1 min) — werdykt TAK/NIE + score + reguły.
+9. **Projekt → Eksporty** (30 s) — duże CTA **Pobierz SRT/VTT** + opis formatów; karta „Raport PDF (wkrótce)".
+10. **`/app/plan`** (1 min) — plan Demo, kredyty (mock), zużycie, plany, **metody płatności** (placeholdery).
+    „Tryb demo — płatności nieaktywne."
+11. **`/app/ustawienia`** (1 min) — sekcje; **Przetwarzanie** (mock/API), **Dostawcy AI** (Silnik transkrypcji =
+    pierwszy adapter, klucz dev/demo), **Developer** (integracje + ENV). „OpenAI to jeden z wymienialnych silników."
+12. **Stan offline** (opcjonalnie) — ubij silnik: baner „Silnik offline — demo działa dalej" + „Zobacz przykład".
 
 > Mapy: `docs/ROADMAP.md`, statusy: `docs/PRODUCT_STATUS.md`, integracje: `docs/EXTERNAL_APIS.md`,
 > monetyzacja: `docs/MONETIZATION.md`.
