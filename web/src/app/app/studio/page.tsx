@@ -9,6 +9,7 @@ import { createJob, getJob } from "@/lib/api";
 import type { Job } from "@/lib/contract";
 import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
 import { DEMO_DOC } from "@/lib/demoDoc";
+import { probeAudioPresence } from "@/lib/audioProbe";
 import { useWorkerUp } from "@/components/shell/AppShell";
 import PageHeader from "@/components/shell/PageHeader";
 import Section from "@/components/ui/Section";
@@ -68,6 +69,7 @@ function StudioInner() {
   const [job, setJob] = useState<Job | null>(null);
   const [sample, setSample] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [audioWarn, setAudioWarn] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
   const pick = () => inputRef.current?.click();
@@ -78,7 +80,10 @@ function StudioInner() {
     const okType = f.type.startsWith("audio/") || f.type.startsWith("video/") || /\.(mp3|wav|m4a|mp4|mov|mkv|aac|ogg|flac|webm)$/i.test(f.name);
     if (!okType) { setFile(null); setError("Nieobsługiwany format. Wgraj audio lub wideo (MP3, WAV, M4A, MP4, MOV...)."); return; }
     if (f.size > MAX_MB * 1024 * 1024) { setFile(null); setError(`Plik za duży (limit ${MAX_MB} MB w demo).`); return; }
-    setError(null); setFile(f);
+    setError(null); setFile(f); setAudioWarn(null);
+    probeAudioPresence(f).then((r) => {
+      if (r.ok && !r.hasAudio) setAudioWarn("Wygląda na to, że materiał nie ma słyszalnego dźwięku — napisy mogą nie powstać. Sprawdź, czy plik ma ścieżkę audio.");
+    });
   }
 
   function runSample() {
@@ -149,11 +154,17 @@ function StudioInner() {
               <div className="mt-4 flex items-center gap-3 rounded-xl border border-hair bg-white px-4 py-3">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-50 text-brand-700"><Icon name="file" size={18} /></span>
                 <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-graphite">{file.name}</p><p className="text-xs text-muted tnum">{(file.size / 1024 / 1024).toFixed(1)} MB · gotowy</p></div>
-                <button onClick={(e) => { e.stopPropagation(); setFile(null); }} aria-label="Usuń plik" className="focusring rounded-lg p-2 text-muted hover:bg-slate-100"><Icon name="x" size={18} /></button>
+                <button onClick={(e) => { e.stopPropagation(); setFile(null); setAudioWarn(null); }} aria-label="Usuń plik" className="focusring rounded-lg p-2 text-muted hover:bg-slate-100"><Icon name="x" size={18} /></button>
               </div>
             )}
 
             {(file || sample) && <UsageEstimate durationMs={estMs} />}
+            {audioWarn && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/5 px-3 py-2.5">
+                <Icon name="alert" size={16} className="mt-0.5 shrink-0 text-warn" />
+                <p className="text-xs text-graphite">{audioWarn}</p>
+              </div>
+            )}
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button onClick={handleRun} disabled={!file || busy || workerUp === false} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
