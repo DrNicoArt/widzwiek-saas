@@ -29,9 +29,9 @@ export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
             <Link key={it.href} href={it.href} aria-current={active ? "page" : undefined}
               className={[
                 "relative mb-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focusring",
-                active ? "bg-brand-50/80 font-medium text-brand-700" : "text-graphite hover:bg-brand-50/60",
+                active ? "bg-brand-50/80 font-medium text-brand-700" : "text-graphite hover:translate-x-0.5 hover:bg-brand-50/60",
               ].join(" ")}>
-              {active && <motion.span layoutId="navactive" className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r bg-brand-600" />}
+              {active && <motion.span layoutId="navactive" className="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r bg-gradient-to-b from-brand-500 to-accent-500" />}
               <Icon name={it.icon} size={19} className={active ? "text-brand-600" : "text-muted"} />
               <span className="flex-1">{it.label}</span>
             </Link>

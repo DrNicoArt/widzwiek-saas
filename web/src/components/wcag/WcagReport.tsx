@@ -1,7 +1,7 @@
 "use client";
-// Raport WCAG — ekran "certyfikacji". Etap 1: gauge statyczny + werdykt + kafle + lista reguł.
-// TODO(motion): gauge count-up 0→wynik, opóźniony reveal werdyktu, kaskada reguł, check animation.
-import { motion } from "framer-motion";
+// Raport WCAG — ekran "certyfikacji": gauge z count-up + animowany pierścień, werdykt, kafle, reguły.
+import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import type { WcagReport as Report } from "@/lib/contract";
 import { Badge, type Tone } from "@/components/ui/Badge";
 import Icon, { type IconName } from "@/components/ui/Icon";
@@ -26,6 +26,22 @@ export default function WcagReport({ report }: { report: Report }) {
   const C = 2 * Math.PI * 52;
   const offset = C * (1 - score / 100);
   const ring = ok ? "#1F7A4D" : "#B42318";
+  const reduce = useReducedMotion();
+
+  const [shown, setShown] = useState(reduce ? score : 0);
+  useEffect(() => {
+    if (reduce) { setShown(score); return; }
+    let raf = 0; const start = performance.now(); const D = 900;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / D);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setShown(Math.round(eased * score));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [score, reduce]);
+
   const byCode = new Map<string, Tone>();
   for (const it of report.issues) {
     const t: Tone = it.severity === "error" ? "err" : it.severity === "warning" ? "warn" : "info";
@@ -38,9 +54,11 @@ export default function WcagReport({ report }: { report: Report }) {
         <div className="grid shrink-0 place-items-center">
           <svg width="148" height="148" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="52" fill="none" stroke="#E6EEF7" strokeWidth="11" />
-            <circle cx="60" cy="60" r="52" fill="none" stroke={ring} strokeWidth="11" strokeLinecap="round"
-              strokeDasharray={C} strokeDashoffset={offset} transform="rotate(-90 60 60)" />
-            <text x="60" y="56" textAnchor="middle" fontSize="30" fontWeight="500" fill="#151515" className="tnum">{score}%</text>
+            <motion.circle cx="60" cy="60" r="52" fill="none" stroke={ring} strokeWidth="11" strokeLinecap="round"
+              strokeDasharray={C} transform="rotate(-90 60 60)"
+              initial={{ strokeDashoffset: C }} animate={{ strokeDashoffset: offset }}
+              transition={{ duration: reduce ? 0 : 0.9, ease: [0.22, 1, 0.36, 1] }} />
+            <text x="60" y="56" textAnchor="middle" fontSize="30" fontWeight="500" fill="#151515" className="tnum">{shown}%</text>
             <text x="60" y="76" textAnchor="middle" fontSize="11" fill="#5F6670">WCAG 2.1 AA</text>
           </svg>
         </div>

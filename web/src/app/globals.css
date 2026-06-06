@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --brand: #0057A8; --navy: #073763; }
+:root { --brand: #0057A8; --navy: #073763; --accent: #FB5E26; }
 
 * { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 
@@ -10,6 +10,7 @@ html, body { height: 100%; }
 body {
   background:
     radial-gradient(1200px 600px at 88% -8%, #EAF2FB 0%, rgba(234,242,251,0) 60%),
+    radial-gradient(820px 460px at 102% 80%, rgba(251,94,38,0.07) 0%, rgba(251,94,38,0) 60%),
     radial-gradient(900px 500px at -6% 8%, #EEF5FC 0%, rgba(238,245,252,0) 55%),
     #F7FAFD;
   color: #151515;
@@ -24,7 +25,19 @@ body {
   .glass { background: rgba(255,255,255,0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   .tnum { font-variant-numeric: tabular-nums; }
   .focusring:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0,87,168,0.18); }
+  /* Tekst w duotone błękit→koral (akcent dla nagłówków premium) */
+  .text-duo { background: linear-gradient(100deg, #084C8D 0%, #0057A8 45%, #FB5E26 120%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
 }
+
+/* Połysk przeciągający się po elemencie na hover (CTA) */
+.shine { position: relative; overflow: hidden; }
+.shine::after {
+  content: ""; position: absolute; top: 0; left: -150%; width: 55%; height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255,255,255,0.40), transparent);
+  transform: skewX(-18deg); pointer-events: none;
+}
+.shine:hover::after { animation: shineSweep 0.85s ease; }
 
 .shimmer { position: relative; overflow: hidden; background: #EEF3F9; }
 .shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
@@ -32,4 +45,5 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .shine:hover::after { animation: none; }
 }

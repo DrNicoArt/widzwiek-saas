@@ -16,6 +16,8 @@ export default function Splash() {
           transition={{ duration: dur.slow, ease: [0.22, 1, 0.36, 1] }} className="relative">
           <div className="absolute -inset-16 rounded-full"
             style={{ background: "radial-gradient(closest-side, rgba(0,87,168,0.18), rgba(0,87,168,0))" }} />
+          <div className="absolute -inset-12 rounded-full animate-huepulse"
+            style={{ background: "radial-gradient(closest-side, rgba(251,94,38,0.16), rgba(251,94,38,0))" }} />
           <BrandEye width={150} breathe />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -23,7 +25,7 @@ export default function Splash() {
           <BrandLogo height={26} />
         </motion.div>
         <div className="mt-7 h-[3px] w-52 overflow-hidden rounded-full bg-brand-100">
-          <motion.div className="h-full w-1/3 rounded-full bg-brand-600"
+          <motion.div className="h-full w-1/3 rounded-full bg-gradient-to-r from-brand-600 to-accent-500"
             animate={{ x: ["-130%", "330%"] }} transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }} />
         </div>
         <p className="mt-3 text-xs tracking-wide text-muted">Widźwięk ładuje się…</p>

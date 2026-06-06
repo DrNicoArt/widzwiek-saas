@@ -29,7 +29,7 @@ export default function Przeglad() {
         <div className="relative grid items-center gap-6 md:grid-cols-[1.4fr_1fr]">
           <div>
             <Badge tone="info" icon="sparkles">Tryb demo · mock</Badge>
-            <h2 className="mt-3 text-2xl font-medium tracking-tight text-graphite md:text-3xl">Napisy zgodne z WCAG — gotowe do publikacji</h2>
+            <h2 className="mt-3 text-2xl font-medium tracking-tight md:text-3xl"><span className="text-duo">Napisy zgodne z WCAG</span> <span className="text-graphite">— gotowe do publikacji</span></h2>
             <p className="mt-1 max-w-lg text-sm text-muted">Captions, nie zwykłe subtitles: mowa, mówcy i dźwięki niewerbalne, raport zgodności i eksport SRT/VTT — z jednego pliku audio lub wideo.</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link href="/app/studio"><Button icon="upload">Nowy materiał</Button></Link>
@@ -39,6 +39,7 @@ export default function Przeglad() {
           <div className="hidden justify-self-center md:block">
             <div className="relative grid h-36 w-36 place-items-center">
               <div className="absolute inset-0 rounded-full" style={{ background: "radial-gradient(closest-side, rgba(0,87,168,0.12), rgba(0,87,168,0))" }} />
+              <div className="absolute -inset-3 rounded-full animate-huepulse" style={{ background: "radial-gradient(closest-side, rgba(251,94,38,0.14), rgba(251,94,38,0))" }} />
               <BrandEye width={130} breathe />
             </div>
           </div>

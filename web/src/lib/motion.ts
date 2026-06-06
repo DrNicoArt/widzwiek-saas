@@ -53,5 +53,11 @@ export const pressTap = { scale: 0.98 };
 // Preset do wejść sekcji przy scrollu (sekcja wchodzi po ~20% viewportu)
 export const inView = { once: true, amount: 0.2 } as const;
 
+// Wejście całej strony przy zmianie route (template.tsx). Blur+slide+fade — premium, ale lekkie.
+export const pageEnter: Variants = {
+  hidden: { opacity: 0, y: 18, filter: "blur(7px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+};
+
 // TODO(motion): pełne scroll-triggered sekwencje, page transitions (AnimatePresence),
 // animated waveform, gauge count-up, pipeline "drawing", parallax watermark — etap 2.

@@ -7,7 +7,7 @@ import Icon, { type IconName } from "./Icon";
 
 type Variant = "primary" | "secondary" | "ghost";
 const styles: Record<Variant, string> = {
-  primary: "bg-brand-600 text-white hover:bg-brand-700 shadow-sm",
+  primary: "shine bg-brand-600 text-white hover:bg-brand-700 shadow-sm hover:shadow-glowAccent",
   secondary: "bg-white text-graphite border border-hair hover:bg-brand-50",
   ghost: "bg-transparent text-brand-700 hover:bg-brand-50",
 };

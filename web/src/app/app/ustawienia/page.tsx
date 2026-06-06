@@ -2,7 +2,8 @@
 // Ustawienia — sekcje. Tu mieszka cała konfiguracja techniczna (w tym dawne „Integracje" → Developer).
 // Język user-facing: „Silnik transkrypcji", „Rozpoznawanie mówców", „Przechowywanie danych".
 // W kodzie/dokumentacji: ASRProvider/DiarizationProvider/SoundEventProvider, BillingProvider.
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import PageHeader from "@/components/shell/PageHeader";
@@ -23,8 +24,8 @@ const SECTIONS: { id: SectionId; label: string; icon: IconName }[] = [
   { id: "dane", label: "Dane i storage", icon: "folder" },
   { id: "platnosci", label: "Metody płatności", icon: "card" },
   { id: "bezpieczenstwo", label: "Bezpieczeństwo", icon: "shield" },
-  { id: "developer", label: "Developer", icon: "plug" },
-];
+  ];
+const DEV_SECTION = { id: "developer" as SectionId, label: "Developer", icon: "plug" as IconName };
 
 // Developer → dawne „Integracje" (status architektoniczny vs runtime).
 type Arch = "gotowe" | "placeholder" | "planowane";
@@ -67,7 +68,10 @@ function ReadonlyField({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function Ustawienia() {
+function UstawieniaInner() {
+  const params = useSearchParams();
+  const dev = params.get("dev") === "1";
+  const visibleSections = dev ? [...SECTIONS, DEV_SECTION] : SECTIONS;
   const [section, setSection] = useState<SectionId>("przetwarzanie");
   const [health, setHealth] = useState<HealthInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -146,7 +150,7 @@ export default function Ustawienia() {
       <div className="flex flex-col gap-6 md:flex-row">
         {/* sub-nav */}
         <nav className="flex shrink-0 gap-1 overflow-x-auto md:w-52 md:flex-col">
-          {SECTIONS.map((s) => {
+          {visibleSections.map((s) => {
             const active = section === s.id;
             return (
               <button key={s.id} onClick={() => setSection(s.id)} aria-current={active ? "true" : undefined}
@@ -285,5 +289,13 @@ export default function Ustawienia() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Ustawienia() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-5xl py-10 text-sm text-muted">Wczytywanie ustawień…</div>}>
+      <UstawieniaInner />
+    </Suspense>
   );
 }

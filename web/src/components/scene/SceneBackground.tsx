@@ -1,9 +1,9 @@
 "use client";
-// Warstwa głębi (immersive L3) — fixed, za całym UI. Składa:
-//  • miękki gradient + radialne światło podążające za kursorem,
-//  • półprzezroczysty OFICJALNY sygnet jako "system presence" (parallax + oddech),
-//  • żywy waveform na dole,
-//  • subtelne scan-lines.
+// Warstwa głębi (immersive L3) — fixed, za całym UI:
+//  • gradient + radialne światło błękitne podążające za kursorem,
+//  • DRUGA aurora w kolorze akcentu (koral), dryfująca w przeciwfazie — przełamanie błękitu,
+//  • półprzezroczysty OFICJALNY sygnet (parallax + oddech),
+//  • żywy waveform (błękit + pasmo akcentu) na dole, subtelne scan-lines.
 // pointer-events: none; respektuje prefers-reduced-motion.
 import { useEffect } from "react";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
@@ -28,18 +28,23 @@ export default function SceneBackground() {
 
   const lightX = useTransform(sx, (v) => `${v * 100}%`);
   const lightY = useTransform(sy, (v) => `${v * 100}%`);
+  // aurora akcentu — w przeciwfazie do kursora
+  const accX = useTransform(sx, (v) => `${(1 - v) * 100}%`);
+  const accY = useTransform(sy, (v) => `${(1 - v) * 100}%`);
   const eyeX = useTransform(sx, (v) => (v - 0.5) * 26);
   const eyeY = useTransform(sy, (v) => (v - 0.5) * 18);
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* radialne światło podążające za akcją/kursorem */}
+      {/* radialne światło błękitne podążające za akcją/kursorem */}
       <motion.div
         className="absolute h-[60vh] w-[60vh] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          left: lightX, top: lightY,
-          background: "radial-gradient(closest-side, rgba(0,87,168,0.10), rgba(0,87,168,0))",
-        }}
+        style={{ left: lightX, top: lightY, background: "radial-gradient(closest-side, rgba(0,87,168,0.10), rgba(0,87,168,0))" }}
+      />
+      {/* aurora akcentu (koral) */}
+      <motion.div
+        className="absolute h-[52vh] w-[52vh] -translate-x-1/2 -translate-y-1/2 rounded-full animate-aurora"
+        style={{ left: accX, top: accY, background: "radial-gradient(closest-side, rgba(251,94,38,0.10), rgba(251,94,38,0))" }}
       />
       {/* OFICJALNY sygnet jako watermark systemu */}
       <motion.img
@@ -49,9 +54,9 @@ export default function SceneBackground() {
         animate={reduce ? undefined : { scale: [1, 1.03, 1] }}
         transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
       />
-      {/* żywy waveform na dole */}
+      {/* żywy waveform na dole (błękit + pasmo akcentu) */}
       <div className="absolute inset-x-0 bottom-0">
-        <WaveformField live={!reduce} baseOpacity={0.07} height={260} />
+        <WaveformField live={!reduce} accentColor="#FB5E26" baseOpacity={0.07} height={260} />
       </div>
       {/* scan-lines */}
       <div className="absolute inset-0" style={{
