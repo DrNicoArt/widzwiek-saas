@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Widźwięk — napisy zgodne z WCAG",
+  title: "Widźwięk — zobacz to, co inni słyszą",
   description:
-    "Automatyczne napisy dostępnościowe (captions) dla polskiego audio i wideo. SubrosAI.",
+    "Inteligentny system napisów dostępnościowych dla polskiego audio i wideo. SubrosAI.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

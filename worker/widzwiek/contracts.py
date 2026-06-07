@@ -58,6 +58,13 @@ class Speaker(BaseModel):
     color: str = "white"             # kolor WCAG dla VTT
 
 
+class CueToken(BaseModel):
+    """Fragment napisu (zwykle slowo) z opcjonalnym stylem per-slowo."""
+    text: str
+    color: Optional[str] = None   # dowolny CSS/hex; None = kolor mowcy/domyslny
+    bold: bool = False
+
+
 class Cue(BaseModel):
     id: str
     index: int = Field(ge=1)         # kolejność wyświetlania / numer SRT
@@ -67,6 +74,7 @@ class Cue(BaseModel):
     speaker_id: Optional[str] = None  # None dla dźwięku lub nieznanego mówcy
     lines: list[str]                  # 1-2 linie (limit WCAG)
     text: str                         # pełny, niepołamany tekst
+    tokens: Optional[list[CueToken]] = None  # opcjonalny styl per-slowo
 
     @property
     def duration_ms(self) -> int:
@@ -110,12 +118,23 @@ class DocumentMeta(BaseModel):
     pipeline: PipelineMeta = Field(default_factory=PipelineMeta)
 
 
+class CaptionStyle(BaseModel):
+    """Prezentacja napisow (offline, bez AI). Trafia do podgladu i eksportu VTT."""
+    font_family: str = "system"        # klucz fontu (system, arial, verdana, atkinson...) lub stack CSS
+    font_size: int = Field(default=20, ge=10, le=64)  # px
+    position: str = "bottom"           # bottom | top
+    background: bool = True            # plecek pod tekstem
+    max_chars_per_line: int = Field(default=42, ge=10, le=80)
+    max_lines: int = Field(default=2, ge=1, le=3)
+
+
 class CaptionDocument(BaseModel):
     schema_version: Literal["1.0"] = SCHEMA_VERSION
     media: MediaInfo
     speakers: list[Speaker] = Field(default_factory=list)
     cues: list[Cue] = Field(default_factory=list)
     wcag: WcagReport = Field(default_factory=WcagReport)
+    style: CaptionStyle = Field(default_factory=CaptionStyle)
     meta: DocumentMeta = Field(default_factory=DocumentMeta)
 
     def speaker_by_id(self, speaker_id: Optional[str]) -> Optional[Speaker]:

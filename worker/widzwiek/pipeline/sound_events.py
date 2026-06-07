@@ -1,4 +1,10 @@
-"""Etap detekcji dźwięków niewerbalnych. PoC: Mock. Docelowo: YAMNet/PANNs lub LLM (TBD)."""
+"""Etap detekcji dźwięków niewerbalnych.
+
+Tryby:
+- Mock (PoC) — MockSoundEventProvider (przykładowe [oklaski], [muzyka]...).
+- TBD — NoopSoundEventProvider: nic nie wykrywa (zamiast zmyślać dźwięki dla
+  realnego audio). Walidator WCAG zgłosi wtedy INFO o braku opisów dźwięków.
+"""
 from __future__ import annotations
 
 from typing import Optional
@@ -13,6 +19,14 @@ class MockSoundEventProvider(SoundEventProvider):
 
     def detect(self, audio_path: Optional[str], media: MediaInfo) -> list[SoundEvent]:
         return mock_data.mock_sounds()
+
+
+class NoopSoundEventProvider(SoundEventProvider):
+    """TBD: brak detekcji dźwięków niewerbalnych (placeholder dla trybu API)."""
+    name = "noop-tbd"
+
+    def detect(self, audio_path: Optional[str], media: MediaInfo) -> list[SoundEvent]:
+        return []
 
 
 class AudioTaggingSoundEventProvider(SoundEventProvider):
@@ -31,4 +45,6 @@ class AudioTaggingSoundEventProvider(SoundEventProvider):
 def get_sound_provider(name: str) -> SoundEventProvider:
     if name in ("yamnet", "panns"):
         return AudioTaggingSoundEventProvider()
+    if name in ("noop", "noop-tbd", "none"):
+        return NoopSoundEventProvider()
     return MockSoundEventProvider()

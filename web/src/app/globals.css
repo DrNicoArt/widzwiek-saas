@@ -2,10 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light dark;
+:root { --brand: #0057A8; --navy: #073763; --accent: #FB5E26; }
+
+* { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+html, body { height: 100%; }
+body {
+  background:
+    radial-gradient(1200px 600px at 88% -8%, #EAF2FB 0%, rgba(234,242,251,0) 60%),
+    radial-gradient(820px 460px at 102% 80%, rgba(251,94,38,0.07) 0%, rgba(251,94,38,0) 60%),
+    radial-gradient(900px 500px at -6% 8%, #EEF5FC 0%, rgba(238,245,252,0) 55%),
+    #F7FAFD;
+  color: #151515;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #C7D6E8; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #A9C0DC; background-clip: content-box; }
+
+@layer utilities {
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  .focus\\:not-sr-only:focus { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
+  .glass { background: rgba(255,255,255,0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .focusring:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(0,87,168,0.18); }
+  /* Tekst w duotone błękit→koral (akcent dla nagłówków premium) */
+  .text-duo { background: linear-gradient(100deg, #084C8D 0%, #0057A8 45%, #FB5E26 120%);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+}
+
+/* Połysk przeciągający się po elemencie na hover (CTA) */
+.shine { position: relative; overflow: hidden; }
+.shine::after {
+  content: ""; position: absolute; top: 0; left: -150%; width: 55%; height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255,255,255,0.40), transparent);
+  transform: skewX(-18deg); pointer-events: none;
+}
+.shine:hover::after { animation: shineSweep 0.85s ease; }
+
+.shimmer { position: relative; overflow: hidden; background: #EEF3F9; }
+.shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent); animation: shimmer 1.4s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .shine:hover::after { animation: none; }
+}
+
+
+/* ===== Premium FX layer ===== */
+
+/* Ziarno/grain — subtelna tekstura "drukarska", podnosi percepcję jakości */
+.grain::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+/* Tekst z animowanym, przesuwającym się gradientem (duotone blekit->koral->blekit) */
+.text-shimmer {
+  background-image: linear-gradient(100deg, #084C8D 0%, #0057A8 30%, #FB5E26 50%, #0057A8 70%, #084C8D 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: textshimmer 6s linear infinite;
+}
+
+/* Animowana, obracająca się ramka-gradient (conic) dla kart "hero/featured" */
+.border-aurora { position: relative; }
+.border-aurora::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px;
+  background: conic-gradient(from 0deg, #0057A8, #4E8FD6, #FB5E26, #FF9F73, #0057A8);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: borderspin 7s linear infinite; opacity: 0.85;
+}
+
+/* Spotlight podążający za kursorem (ustawiamy --mx/--my w JS) */
+.spotlight { position: relative; overflow: hidden; }
+.spotlight::after {
+  content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 50%), rgba(251,94,38,0.12), rgba(0,87,168,0.10) 40%, transparent 70%);
+}
+.spotlight:hover::after { opacity: 1; }
+
+/* Szkło premium z miekkim wewnetrznym swiatlem */
+.glass-premium {
+  background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.6));
+  backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(7,55,99,0.05), 0 16px 40px -20px rgba(7,55,99,0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-shimmer, .border-aurora::before { animation: none; }
+  .spotlight::after { display: none; }
+  .grain::before { display: none; }
 }
