@@ -31,3 +31,14 @@ npm run lint       # next lint
 
 Root Directory = `web`. Ustaw `NEXT_PUBLIC_WORKER_URL`. Worker AI hostujemy osobno — patrz
 `../docs/ROADMAP.md`.
+
+## Klikalne demo bez workera
+
+Na pokaz mozesz wdrozyc sam frontend jako statyczne demo:
+
+- Root Directory: `web`
+- Build Command: `npm run build`
+- Environment Variable: `NEXT_PUBLIC_STATIC_DEMO=1`
+
+W tym trybie Vercel nie potrzebuje workera. Upload i status workera uzywaja danych demo, a przykladowe projekty
+`p1`-`p6` sa generowane statycznie.

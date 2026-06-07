@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createJob, getJob, importJob } from "@/lib/api";
+import { createJob, getJob, importJob, IS_STATIC_DEMO } from "@/lib/api";
 import type { Job } from "@/lib/contract";
 import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
 import { DEMO_DOC } from "@/lib/demoDoc";
@@ -114,6 +114,10 @@ function StudioInner() {
 
   async function handleRun() {
     if (!file) return;
+    if (IS_STATIC_DEMO) {
+      runSample();
+      return;
+    }
     setError(null); setJob(null); setSample(false); setPhase("uploading");
     try {
       const created = await createJob(file);
