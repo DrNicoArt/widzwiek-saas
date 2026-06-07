@@ -7,8 +7,8 @@ import WaveformField from "@/components/scene/WaveformField";
 import { stagger, fadeUp, spring } from "@/lib/motion";
 
 const STAGES: { key: string; label: string; icon: IconName }[] = [
-  { key: "audio", label: "Audio", icon: "file" },
-  { key: "asr", label: "Transkrypcja", icon: "captions" },
+  { key: "source", label: "Źródło", icon: "file" },
+  { key: "transcript", label: "Transkrypt", icon: "captions" },
   { key: "spk", label: "Mówcy", icon: "users" },
   { key: "snd", label: "Dźwięki", icon: "wave" },
   { key: "wcag", label: "WCAG", icon: "shield" },

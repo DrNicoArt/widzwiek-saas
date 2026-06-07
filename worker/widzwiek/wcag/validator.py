@@ -61,7 +61,7 @@ def validate(doc: CaptionDocument) -> WcagReport:
             elif n > rules.RECOMMENDED_CHARS_PER_LINE:
                 issues.append(WcagIssue(
                     code="LINE_TOO_LONG", severity=Severity.warning, cue_id=cue.id, field="lines",
-                    message=f"Linia ma {n} znaków — zalecane ≤{rules.RECOMMENDED_CHARS_PER_LINE}: \"{line}\"",
+                    message=f"Linia ma {n} znaków — zalecane <= {rules.RECOMMENDED_CHARS_PER_LINE}: \"{line}\"",
                 ))
             if _is_shouting(line):
                 issues.append(WcagIssue(
@@ -88,7 +88,7 @@ def validate(doc: CaptionDocument) -> WcagReport:
             if cps > rules.MAX_CHARS_PER_SECOND:
                 issues.append(WcagIssue(
                     code="READING_SPEED", severity=Severity.warning, cue_id=cue.id,
-                    message=f"Prędkość czytania {cps:.1f} zn./s — zalecane ≤{rules.MAX_CHARS_PER_SECOND:.0f} zn./s.",
+                message=f"Prędkość czytania {cps:.1f} zn./s — zalecane <= {rules.MAX_CHARS_PER_SECOND:.0f} zn./s.",
                 ))
 
         # Nakładanie / przerwa względem poprzedniego
@@ -103,7 +103,7 @@ def validate(doc: CaptionDocument) -> WcagReport:
             elif gap < rules.MIN_GAP_MS:
                 issues.append(WcagIssue(
                     code="GAP_TOO_SHORT", severity=Severity.warning, cue_id=cue.id, field="start_ms",
-                    message=f"Przerwa {gap} ms względem poprzedniego napisu — zalecane ≥{rules.MIN_GAP_MS} ms (anty-miganie).",
+                    message=f"Przerwa {gap} ms względem poprzedniego napisu — zalecane >= {rules.MIN_GAP_MS} ms (anty-miganie).",
                 ))
 
         # Identyfikacja mówcy przy wielu mówcach

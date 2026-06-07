@@ -20,6 +20,7 @@ zewnętrznych API. Walidacja WCAG i eksport SRT/VTT są **realne**; transkrypcja
 dane mock zgodne z kontraktem `CaptionDocument` (ten sam kontrakt obsłuży później realne providery).
 
 - Scenariusz pokazu: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)
+- Orkiestrator przetwarzania: [`docs/ORCHESTRATOR.md`](docs/ORCHESTRATOR.md)
 - Co działa / mock / placeholder: [`docs/PRODUCT_STATUS.md`](docs/PRODUCT_STATUS.md)
 - Integracje zewnętrzne (status, ENV, fallback): [`docs/EXTERNAL_APIS.md`](docs/EXTERNAL_APIS.md)
 - Test live API (po kluczu): [`docs/API_LIVE_TEST.md`](docs/API_LIVE_TEST.md) · droga do MVP: [`docs/MVP_CHECKLIST.md`](docs/MVP_CHECKLIST.md)
@@ -37,10 +38,10 @@ web/  (Next.js + TS)            worker/ (Python + FastAPI)
         mówcy+dźwięki→WCAG→eksport
 ```
 
-- **worker/** — pipeline `ASR → diaryzacja → dźwięki → formatowanie → WCAG → eksport`; tryb `mock`/`api`
-  (provider pattern: `ASRProvider`, `DiarizationProvider`, `SoundEventProvider`).
+- **worker/** — pipeline pod orkiestratorem: źródło transkryptu → provider transkrypcji → diaryzacja →
+  dźwięki → formatowanie → WCAG → eksport; tryb `mock`/`api`.
 - **contracts/** — `CaptionDocument` (JSON Schema) — wspólny kontrakt web↔worker, niezmieniany przy podmianie providerów.
-- **docs/** — [ARCHITECTURE](docs/ARCHITECTURE.md) · [DATA_CONTRACT](docs/DATA_CONTRACT.md) · [WCAG](docs/WCAG.md) · [DECISIONS](docs/DECISIONS.md) · [BRAND_UI_GUIDELINES](docs/BRAND_UI_GUIDELINES.md) · [EXTERNAL_APIS](docs/EXTERNAL_APIS.md) · [PRODUCT_STATUS](docs/PRODUCT_STATUS.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [API_LIVE_TEST](docs/API_LIVE_TEST.md) · [MVP_CHECKLIST](docs/MVP_CHECKLIST.md) · [ROADMAP](docs/ROADMAP.md)
+- **docs/** — [ARCHITECTURE](docs/ARCHITECTURE.md) · [ORCHESTRATOR](docs/ORCHESTRATOR.md) · [DATA_CONTRACT](docs/DATA_CONTRACT.md) · [WCAG](docs/WCAG.md) · [DECISIONS](docs/DECISIONS.md) · [BRAND_UI_GUIDELINES](docs/BRAND_UI_GUIDELINES.md) · [EXTERNAL_APIS](docs/EXTERNAL_APIS.md) · [PRODUCT_STATUS](docs/PRODUCT_STATUS.md) · [DEMO_SCRIPT](docs/DEMO_SCRIPT.md) · [API_LIVE_TEST](docs/API_LIVE_TEST.md) · [MVP_CHECKLIST](docs/MVP_CHECKLIST.md) · [ROADMAP](docs/ROADMAP.md)
 
 ---
 

@@ -19,11 +19,13 @@ wsparcie modeli). **Status:** przyjęte.
 **Powód:** brak transformacji między etapami, łatwa serializacja i testy, naturalna ewolucja do MVP.
 **Alternatywy:** osobny payload per etap (więcej mapowań, więcej błędów). **Status:** przyjęte.
 
-## ADR-004 — Silniki AI za interfejsem (Provider) + Mock na PoC
-**Decyzja:** `ASRProvider`/`DiarizationProvider`/`SoundEventProvider` jako interfejsy; teraz `Mock*`,
-docelowo Whisper itd. Wybór przez zmienne `WIDZWIEK_*_PROVIDER`.
-**Powód:** brief mówi „nie zakładaj jednego silnika do czasu wyników PoC". Podmiana modelu = jedna klasa.
-**Status:** przyjęte (real providers = TBD po PoC).
+## ADR-004 — Provider Orchestrator + adaptery providerów
+**Decyzja:** orkiestrator wybiera źródło transkryptu i adaptery (`TranscriptSourceProvider`,
+`ASRProvider`, `DiarizationProvider`, `SoundEventProvider`, `ExportProvider`). `Mock*` działa w demo,
+OpenAI jest pierwszym live providerem, reszta to placeholdery.
+**Powód:** produkt ma być provider-agnostic i automatyczny dla użytkownika. Podmiana providera = adapter,
+nie przebudowa UI ani kontraktu.
+**Status:** przyjęte.
 
 ## ADR-005 — WCAG, formatowanie i eksport jako osobne moduły
 **Decyzja:** `pipeline/formatter` (łamanie linii/timing) ≠ `wcag/validator` (ocena) ≠ `export/` (pliki).
@@ -41,7 +43,8 @@ wartość produktu (raport TAK/NIE). **Status:** przyjęte.
 **Status:** przyjęte.
 
 ## Otwarte kwestie (TBD)
-- Realny ASR: Whisper large-v3 lokalnie vs API OpenAI — decyzja po pomiarze jakości/kosztu PoC.
+- Alternatywni providerzy ASR/API/hosted model — decyzja po pomiarze jakości/kosztu; self-hosted/lokalne
+  modele tylko jako later/dev eksperyment infrastrukturalny, nie strategia produktu.
 - Diaryzacja: pyannote.audio (licencja/HF token) vs alternatywy.
 - Detekcja dźwięków: YAMNet/PANNs vs LLM po transkrypcji — do walidacji.
 - Walidacja kontrastu/synchronizacji/pozycji — wymaga warstwy wideo (poza PoC).

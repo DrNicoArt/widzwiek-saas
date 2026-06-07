@@ -1,86 +1,136 @@
 # Architektura — Widźwięk
 
-## 1. Cel i ograniczenia
+Widźwięk ma być platformą SaaS do captions dostępnościowych i analizy audio/wideo. Nie jest jednym
+dostawcą ASR ani panelem do ręcznego wybierania API. Centralnym elementem jest **Orkiestrator przetwarzania**.
 
-Produkt ma docelowo: przyjąć plik audio/wideo → przetworzyć (transkrypcja, mówcy, dźwięki) →
-sformatować napisy zgodne z WCAG → wyeksportować SRT/VTT → wystawić raport zgodności WCAG (TAK/NIE + lista problemów).
+## Cel produktu
 
-Kluczowe ograniczenie techniczne: **ciężkie AI/audio nie zmieści się w serverless (Vercel)**:
+Użytkownik podaje plik, link albo napisy/transkrypt. System prowadzi materiał do wyniku:
 
-| Ograniczenie Vercel (Hobby/Pro) | Skutek dla Widźwięku |
-|---|---|
-| Limit czasu funkcji 10–300 s | 5-min wideo + modele ML się nie wyrobią |
-| Limit RAM ~1–3 GB | Whisper/diaryzacja potrzebują więcej, najlepiej GPU |
-| Efemeryczny dysk, brak GPU | Brak miejsca na modele i pliki robocze |
-| Body request ~4.5 MB | Upload wideo trzeba kierować poza funkcję |
+`źródło → decyzja orkiestratora → CaptionDocument → WCAG quality layer → edytor → eksport → kredyty/audyt`
 
-**Wniosek:** rozdzielamy frontend (Vercel) od workera AI (lokalnie / osobny serwer z GPU).
+Końcowym kontraktem jest `CaptionDocument`, niezależnie od tego, czy tekst pochodzi z gotowych napisów,
+importu SRT/VTT/TXT, transkrypcji cloud, forced alignment czy demo mocka.
 
-## 2. Warstwy
+## Warstwy
 
 ```
-                        ┌─────────────────────────────────────────────┐
-   Przeglądarka         │                  web/ (Next.js)             │
-   użytkownika  ───────▶│  Upload · Status · Podgląd · Raport · Pobierz│
-                        │  Vercel-ready. Tylko UI + klient API.        │
-                        └───────────────┬─────────────────────────────┘
-                                        │ HTTP (JSON / multipart)
-                                        ▼
-                        ┌─────────────────────────────────────────────┐
-                        │              worker/ (FastAPI)               │
-                        │  REST API + Pipeline + WCAG + Eksport        │
-                        │  Lokalnie / VPS / serwer GPU.                │
-                        └───────────────┬─────────────────────────────┘
-                                        │
-            ┌───────────────────────────┼───────────────────────────┐
-            ▼                           ▼                           ▼
-   ASR / Diaryzacja / Dźwięki    WCAG Validator              Eksport SRT/VTT
-   (interfejsy + Mock/TBD)       (reguły AA z briefu)        (z CaptionDocument)
+Przeglądarka / Next.js
+  upload, URL placeholder, import SRT/VTT, edytor, status WCAG, eksport
+        |
+        v
+Worker / FastAPI
+  Provider Orchestrator
+    - rozpoznaje źródło
+    - wybiera źródło transkryptu
+    - wybiera providerów i fallbacki
+    - zapisuje decyzję i koszt
+        |
+        v
+Pipeline
+  ingest/audio -> transcript/source -> diarization -> sound events -> formatter
+        |
+        v
+CaptionDocument
+        |
+        v
+WCAG quality layer -> editor -> SRT/VTT/TXT/JSON/PDF placeholder -> billing usage
 ```
 
-Rozdzielenie odpowiedzialności (świadomie, zgodnie z wytycznymi):
-- **AI ≠ walidacja WCAG ≠ eksport.** Trzy osobne moduły (`pipeline/`, `wcag/`, `export/`).
-- **UI ≠ pipeline.** Frontend nigdy nie liczy WCAG ani nie formatuje napisów — tylko renderuje wynik z workera.
-- **Silniki AI za interfejsem.** Podmiana modelu = jedna nowa klasa, reszta bez zmian.
+## Wejścia
 
-## 3. Pipeline (etapy)
+| Wejście | Obecny status | Docelowa decyzja orkiestratora |
+|---|---|---|
+| Upload audio/wideo | działa z workerem/mockiem | sprawdź audio, potem wybierz transcript source lub ASR |
+| Import SRT/VTT | działa | normalizuj do `CaptionDocument`, uruchom WCAG |
+| URL YouTube/TikTok/Vimeo/publiczny | placeholder UI | najpierw captions import, potem audio extraction, potem ASR |
+| TXT/CSV/JSON/transkrypt spotkania | placeholder | forced alignment albo text cleanup |
+| Materiał demo | działa | mock CaptionDocument bez zewnętrznych API |
 
-Każdy etap przyjmuje i wzbogaca jeden obiekt `CaptionDocument` (patrz `DATA_CONTRACT.md`).
+Demo nie wykonuje scrapingu, nie instaluje SDK platform i nie obchodzi regulaminów. URL resolver jest projektowym
+placeholderem pod przyszły legalny i techniczny przepływ.
 
-| # | Etap | Moduł | Wejście | Wyjście | Provider (PoC → docelowo) |
-|---|------|-------|---------|---------|---------------------------|
-| 1 | Ingest | `pipeline/runner` | plik | `MediaInfo` (czas, format) | stub → ffprobe |
-| 2 | ASR (transkrypcja) | `pipeline/asr` | audio | segmenty mowy + czasy | Mock → **Whisper** |
-| 3 | Diaryzacja (mówcy) | `pipeline/diarization` | audio + segmenty | `speaker_id` per segment | Mock → **pyannote** |
-| 4 | Dźwięki niewerbalne | `pipeline/sound_events` | audio | cues `[oklaski]`, `[muzyka]`… | Mock → **YAMNet/PANNs** (TBD) |
-| 5 | Formatowanie napisów | `pipeline/formatter` | segmenty + dźwięki | cues 1–2 linie, ≤42 zn., timing | reguły deterministyczne |
-| 6 | Walidacja WCAG | `wcag/validator` | cues | `WcagReport` (TAK/NIE + issues) | reguły AA |
-| 7 | Eksport | `export/srt`, `export/vtt` | `CaptionDocument` | pliki .srt / .vtt | deterministyczne |
+## Orkiestrator
 
-Etapy 2–4 to AI (wymienne). Etapy 5–7 to logika deterministyczna (testowalna, bez modeli).
+Modele frontowe/dokumentacyjne: `web/src/lib/orchestration.ts`.
 
-## 4. API workera
+Typy:
+
+- `OrchestrationStrategy`
+- `ProviderCapability`
+- `ProviderStatus`
+- `ProviderCostProfile`
+- `ProviderQualityProfile`
+- `ProcessingPolicy`
+- `ProcessingDecision`
+- `ProcessingFallback`
+- `ProcessingAuditLog`
+
+Strategie:
+
+- Automatyczna
+- Najtańsza
+- Najszybsza
+- Najdokładniejsza
+- Instytucjonalna
+- Ręczna zaawansowana
+
+Nie eksponujemy trybu "prywatny/lokalny" jako strategii produktu. Widźwięk jest SaaS z inteligentną orkiestracją
+źródeł i providerów. Ewentualne modele lokalne mogą być later/dev eksperymentem, nie główną ścieżką UI.
+
+## Pipeline
+
+| Etap | Odpowiedzialność | Obecny status |
+|---|---|---|
+| Source ingestion | upload, URL, import SRT/VTT/TXT | upload + SRT/VTT działa, URL/TXT placeholder |
+| Transcript source | gotowe napisy, auto captions, import, ASR | demo + SRT/VTT działa |
+| Transcription provider | cloud/API ASR tylko gdy potrzebny | OpenAI api-ready, reszta placeholder |
+| Diarization provider | speaker labels i przypisanie do cues | mock/single-speaker placeholder |
+| Sound event provider | wykryte, istotne i dodane dźwięki | demo/manual, realna detekcja placeholder |
+| Formatter | linie, timing, cue normalization | działa deterministycznie |
+| WCAG quality layer | problemy per cue i status gotowości | działa deterministycznie |
+| Export provider | SRT/VTT/TXT/JSON/PDF | SRT/VTT/TXT/JSON działa, PDF placeholder |
+| Billing usage | kredyty i koszt | mock/placeholder |
+
+## Dźwięki niewerbalne
+
+Dźwięki są top-level capability, a nie dopisek do transkrypcji. System docelowo ma wykrywać:
+
+- muzykę,
+- śmiech,
+- oklaski,
+- ciszę,
+- pukanie,
+- dzwonek/alarm,
+- kroki/drzwi,
+- szum,
+- aplauz,
+- płacz/krzyk,
+- telefon/sygnał,
+- intro/outro,
+- zmianę nastroju muzyki.
+
+Warstwa produktu rozdziela trzy stany: wykryte, istotne dla zrozumienia, dodane do captions.
+
+## API workera
 
 | Metoda | Ścieżka | Opis |
-|--------|---------|------|
-| GET | `/health` | liveness |
-| POST | `/api/jobs` | upload pliku (multipart) → utworzenie joba, uruchomienie pipeline |
-| GET | `/api/jobs/{id}` | status + (gdy gotowe) `CaptionDocument` z raportem WCAG |
-| GET | `/api/jobs/{id}/export/srt` | pobranie .srt |
-| GET | `/api/jobs/{id}/export/vtt` | pobranie .vtt |
+|---|---|---|
+| GET | `/health` | status workera, mode, provider readiness |
+| POST | `/api/jobs` | upload pliku i uruchomienie pipeline |
+| GET | `/api/jobs` | lista jobów |
+| GET | `/api/jobs/{id}` | status + `CaptionDocument` |
+| PUT | `/api/jobs/{id}` | zapis edytowanego dokumentu i ponowna walidacja |
+| DELETE | `/api/jobs/{id}` | usunięcie joba |
+| POST | `/api/jobs/import` | import napisów do `CaptionDocument` |
+| GET | `/api/jobs/{id}/export/srt|vtt|txt|json` | eksport |
 
-Status joba: `queued → processing → done | error`. Na PoC pipeline jest szybki (mock), więc job
-kończy się niemal natychmiast; kontrakt statusów jest już gotowy pod realne, długie przetwarzanie.
+## Stack i deploy
 
-## 5. Przechowywanie wyników
+- `web/`: Next.js + TypeScript, Vercel-ready.
+- `worker/`: Python + FastAPI, osobny backend do pipeline/audio/API.
+- `contracts/`: schema `CaptionDocument`.
+- `docs/ORCHESTRATOR.md`: mental model i status providerów.
 
-PoC: in-memory store + opcjonalny zrzut JSON na dysk (`WIDZWIEK_STORAGE_DIR`). Bez bazy danych —
-celowo, żeby nie budować infrastruktury przed walidacją technologii. Migracja do MVP: patrz `ROADMAP.md`.
-
-## 6. Dlaczego ten stack (skrót)
-
-- **Next.js + TypeScript** — naturalny wybór pod Vercel, typowany kontrakt, szybki demo UI.
-- **Python + FastAPI** — ekosystem AI audio (Whisper, pyannote, torch), typowanie przez pydantic
-  (te same modele służą jako kontrakt i jako walidacja wejścia API), auto-dokumentacja `/docs`.
-- **Brak mikroserwisów / brak DB / brak kolejki na PoC** — minimalizujemy ruchome części; wszystko,
-  co dodajemy, ma uzasadnienie w `DECISIONS.md`.
+Frontend i worker są rozdzielone. Vercel hostuje UI/statyczne demo, a realny worker wymaga osobnego hostingu.
+To jest decyzja infrastrukturalna, nie product strategy "lokalna/prywatna".

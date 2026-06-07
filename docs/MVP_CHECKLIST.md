@@ -1,50 +1,101 @@
-# Widźwięk — checklist do MVP (po demo v0.4)
+# Widźwięk — MVP checklist
 
-Etapy po stabilnym demo. Każdy ma **Definition of Done (DoD)**. Kolejność = priorytet.
-Statusy integracji: `docs/EXTERNAL_APIS.md`. Stan obecny: `docs/PRODUCT_STATUS.md`.
+Kolejność jest product-centric: najpierw źródła materiału i orkiestracja, potem providerzy, jakość, eksport,
+rozliczenia i hardening. Szczegóły providerów: `docs/EXTERNAL_APIS.md`.
 
-## 1. Live API transcription
-- [ ] `PIPELINE_MODE=api` + `OPENAI_API_KEY`, `python -m widzwiek.api_check` → GOTOWY.
-- **DoD:** realne audio PL → poprawny `CaptionDocument` (segmenty z czasami), raport WCAG się liczy,
-  eksport SRT/VTT działa, brak zmian w kontrakcie danych. Procedura: `docs/API_LIVE_TEST.md`.
+## 1. Source ingestion
 
-## 2. Diaryzacja mówców
-- [ ] Realny `DiarizationProvider` (np. pyannote) zamiast `single-speaker-tbd`.
-- **DoD:** co najmniej **2 rozróżnieni mówcy** na nagraniu z 2 głosami; `speaker_id` + etykiety + kolory WCAG
-  poprawnie mapowane do `CaptionDocument`; raport pokazuje identyfikację mówców.
+- [x] Upload audio/wideo.
+- [x] Import SRT/VTT.
+- [ ] Import TXT/CSV/JSON.
+- [ ] Ręcznie wklejony transkrypt.
+- [ ] URL input jako realny resolver tam, gdzie legalne i technicznie możliwe.
 
-## 3. Sound events (dźwięki niewerbalne)
-- [ ] Realny `SoundEventProvider` zamiast `noop-tbd`.
-- **DoD:** wykryte **min. 3 klasy** (np. `[muzyka]`, `[oklaski]`, `[śmiech]`) z czasami, jako cues `kind=sound`;
-  widoczne w napisach i sekcji „Mówcy i dźwięki".
+**DoD:** każde źródło trafia do jednego `CaptionDocument`, a UI pokazuje użytą ścieżkę.
 
-## 4. Persistence / storage
-- [ ] Trwałe joby/wyniki (Postgres) + pliki (S3/R2/Supabase) zamiast in-memory.
-- **DoD:** projekt/job/wynik **przetrwają odświeżenie i restart**; lista projektów z realnych danych;
-  upload pliku do storage przez presigned URL (bez przechodzenia przez funkcję).
+## 2. First cloud transcription provider: OpenAI
 
-## 5. Deploy
-- [ ] Frontend (Vercel, Root=`web`) + worker (VPS/GPU lub tunel) osobno.
-- **DoD:** frontend online, worker online, `NEXT_PUBLIC_WORKER_URL` + CORS poprawne, `/health` zielone z publicznego adresu.
+- [x] Adapter OpenAI przygotowany do testu API.
+- [ ] Live smoke test z realnym plikiem 30-60 s.
+- [ ] Obsługa modelu `whisper-1` / `gpt-4o-transcribe` / `gpt-4o-mini-transcribe` według dostępności.
 
-## 6. Auth
-- [ ] Lekki auth (np. magic link) — minimalny, bez pełnego systemu kont.
-- **DoD:** dostęp do `/app` chroniony; sesja użytkownika; brak twardej zależności demo od auth.
+**DoD:** realne audio PL -> `CaptionDocument`, WCAG działa, eksport SRT/VTT działa.
 
-## 7. Billing MVP
-- [ ] Model kredyty/pay-per-use + subskrypcje + faktura B2B; jednostka = minuta materiału.
-- [ ] Architektura **provider-agnostic** (`BillingProvider` + adaptery); pierwszy realny dostawca (PL: P24/Tpay + faktura; zagranica: Stripe/Paddle).
-- [ ] Ekran `Plan i płatności` podpięty do realnego salda kredytów i checkoutu (zamiast mocka).
-- **DoD:** limit minut/kredytów per plan egzekwowany przy `create_job`; webhooki idempotentne; saldo spójne; faktura B2B; **brak kluczy/sekretów dostawców w repo**; demo nadal działa bez billingu (MockBillingProvider). Model i ryzyka: `docs/MONETIZATION.md`.
+## 3. Orchestrator strategy MVP
 
-## 8. Security uploadu
-- [ ] Walidacja typu/rozmiaru, timeouty, sanity treści.
-- **DoD:** twardy limit rozmiaru (np. `MAX_UPLOAD_MB`), whitelist formatów audio/wideo, odrzucenie złych plików z czytelnym błędem, timeout przetwarzania.
+- [x] Model strategii i providerów w `web/src/lib/orchestration.ts`.
+- [x] UI strategii: Automatyczna, Najtańsza, Najszybsza, Najdokładniejsza, Instytucjonalna, Ręczna zaawansowana.
+- [ ] Backendowy `ProviderOrchestrator`.
+- [ ] `ProcessingDecision` i `ProcessingAuditLog` zapisywane przy jobie.
 
-## 9. Monitoring / logging
-- [ ] Błędy + metryki (Sentry/OTel), structured logs.
-- **DoD:** błędy workera i frontu raportowane; podstawowe metryki (czas joba, błędy API); alert przy awarii.
+**DoD:** system potrafi wybrać ścieżkę bez ręcznego wskazywania 15 providerów.
 
-## 10. UI polish / immersive
-- [ ] Dopracowanie warstwy doświadczenia (`/`), pełne sceny i motion.
-- **DoD:** spójny premium UX, scene transitions, `prefers-reduced-motion`, build zielony, brak regresji demo.
+## 4. Existing captions import MVP
+
+- [x] SRT/VTT import.
+- [ ] Platform captions import.
+- [ ] Meeting transcript import.
+- [ ] Forced alignment dla dostarczonego tekstu.
+
+**DoD:** najtańsza strategia używa gotowych napisów/transkryptu przed płatnym ASR.
+
+## 5. Sound events MVP
+
+- [x] Dźwięki widoczne jako top-level capability w UI.
+- [x] Edytor pozwala dodawać opisy dźwięków do captions.
+- [x] Panel projektu rozdziela wykryte / istotne / dodane.
+- [ ] Realny `SoundEventProvider`.
+- [ ] Istotność i confidence z realnego provider output.
+
+**DoD:** co najmniej 3 klasy dźwięków z timestampami, rekomendacją i możliwością akceptacji/pominięcia.
+
+## 6. Project-centric editor
+
+- [x] Sidebar: Przegląd, Nowy materiał, Projekty, Plan i płatności, Ustawienia.
+- [x] Zakładki projektu: Podsumowanie, Edytor napisów, Mówcy i dźwięki, Eksporty.
+- [x] Pełny edytor także w statycznym demo Vercel.
+- [ ] Media playback/audio waveform powiązany z cue.
+
+**DoD:** użytkownik pracuje w kontekście jednego projektu/materiału.
+
+## 7. WCAG quality layer
+
+- [x] Raport jako model danych.
+- [x] Status w nagłówku projektu.
+- [x] Problemy w edytorze per cue.
+- [x] Gotowość do publikacji w podsumowaniu i eksporcie.
+- [ ] Drawer/modal szczegółowego raportu.
+
+**DoD:** WCAG prowadzi workflow, nie jest tylko osobnym kafelkiem.
+
+## 8. Export SRT/VTT/PDF
+
+- [x] SRT.
+- [x] VTT.
+- [x] TXT/JSON.
+- [ ] PDF WCAG report.
+- [ ] Historia ostatniego eksportu.
+
+**DoD:** materiał można pobrać w formatach publikacyjnych i audytowych.
+
+## 9. Billing credits/usage
+
+- [x] UI planu, kredytów i metod płatności jako placeholder.
+- [x] Usage estimate w Nowym materiale.
+- [ ] Realne saldo kredytów.
+- [ ] Egzekwowanie limitów przy `create_job`.
+- [ ] Faktura/przelew B2B i voucher provider.
+
+**DoD:** job ma przewidywany i rozliczony koszt, bez SDK/sekretów w repo.
+
+## 10. Production hardening
+
+- [ ] Auth.
+- [ ] Storage plików i trwałe projekty.
+- [ ] Presigned upload.
+- [ ] Limity rozmiaru/formatu.
+- [ ] Monitoring/logging.
+- [ ] Rate limiting.
+- [ ] Security review.
+
+**DoD:** SaaS gotowy do użytkowników instytucjonalnych, a demo nadal działa bez API.

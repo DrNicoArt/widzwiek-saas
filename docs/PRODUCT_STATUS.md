@@ -1,54 +1,90 @@
-# Widźwięk — status produktu (brutalnie jasny)
+# Widźwięk — status produktu
 
-Cel: nie mylić **działającego demo** z **produktem produkcyjnym**.
-Wersja: Product Demo v0.6 (tryb mock; realny, trwały obieg offline — bez API).
+Widźwięk jest platformą SaaS do captions dostępnościowych, WCAG i analizy audio/wideo. Rdzeniem produktu jest
+**Orkiestrator przetwarzania**, który wybiera źródło transkryptu i providerów. OpenAI jest pierwszym providerem
+transkrypcji, ale produkt nie jest zaprojektowany jako "OpenAI integration".
 
-## [OK] Działa naprawdę (demo, lokalnie)
-- **Realny rdzeń offline (bez API):** trwała persistencja jobów (zrzut JSON, ładowanie po restarcie),
-  lista materiałów `GET /api/jobs`, usuwanie, **edytor napisów** `PUT /api/jobs/{id}` (edycja tekstu/czasu →
-  ponowna walidacja WCAG + prze-zawijanie linii), eksport **SRT/VTT/TXT/JSON**, realny czas trwania (ffprobe).
-  Frontend: Projekty pokazują realne wgrane materiały, edycja w zakładce Napisy, eksport z workera.
-- Worker FastAPI: `/health`, upload joba, status joba, eksport SRT/VTT.
-- Mock pipeline: pełny przepływ → `CaptionDocument` (transkrypcja, mówcy, dźwięki — dane demo).
-- Walidacja WCAG 2.1 AA: raport TAK/NIE + lista błędów/ostrzeżeń (realna logika, nie mock).
-- Eksport SRT i VTT: realne pliki generowane z `CaptionDocument`.
-- Frontend Next.js: `/` (wejście) + `/app` (pracownia), status worker online/offline, podgląd napisów, raport, pobieranie.
-- Branding z oficjalnych assetów (`BrandLogo`/`BrandEye`).
-- Testy zielone (29), build zielony, brak wymogu kluczy/sieci.
+## Działa teraz
 
-## [MOCK] Świadomie udawane w demo
-- Transkrypcja, mówcy i dźwięki w trybie mock to przykładowy materiał PL, nie analiza wgranego pliku.
-- Czas trwania, segmenty i timing pochodzą z `mock_data`.
-- Biblioteka projektów i statystyki na dashboardzie to dane demonstracyjne (`mockData`).
+- Project-centric UI: Przegląd, Nowy materiał, Projekty, Plan i płatności, Ustawienia.
+- Import SRT/VTT do `CaptionDocument`.
+- Pełny edytor napisów: cue, timing, mówcy, dźwięki, style, kontrast, undo/redo, zapis.
+- WCAG quality layer: problemy per cue, status zgodności, rewalidacja po zapisie.
+- Eksport SRT/VTT/TXT/JSON.
+- Worker FastAPI: `/health`, joby, import, update document, eksport.
+- Mock demo bez zewnętrznych API.
+- Tryb statycznego demo na Vercel przez `NEXT_PUBLIC_STATIC_DEMO=1`.
+- Dokumentacyjny i frontendowy model orkiestratora w `web/src/lib/orchestration.ts`.
 
-## [API-READY] Przygotowane do testu live (czeka na klucz)
-- Transkrypcja OpenAI (`PIPELINE_MODE=api` + `OPENAI_API_KEY`) — adapter i mapowanie gotowe, zero live-requestów w testach.
-- Ekstrakcja audio z wideo (ffmpeg) — gotowa, wymaga ffmpeg w systemie.
+## Działa w demo / mock
 
-## [TBD] Placeholder / interfejs, brak realnej logiki
-- Diaryzacja mówców — `single-speaker-tbd` (api). Realny provider: kolejny etap.
-- Dźwięki niewerbalne — `noop-tbd` (api). Realny detektor: kolejny etap.
-- Realny czas trwania (ffprobe) zamiast wartości z mocka.
+- Transkrypcja, mówcy i dźwięki dla przykładowego materiału.
+- Szacunek kredytów i usage.
+- Billing UI: plan, kredyty, metody płatności, faktura B2B jako placeholder.
+- Dźwięki niewerbalne jako workflow: wykryte, istotne, dodane do captions.
 
-## [LATER] Po MVP, wymaga decyzji
-- Storage plików (S3/R2/Supabase), persistencja (Postgres), auth, płatności, e-mail,
-  eksport PDF raportu, integracje cloud, monitoring, rate limiting, limity i bezpieczeństwo uploadu.
-  Status każdej: `docs/EXTERNAL_APIS.md`.
+Demo nie wymaga klucza API, sieci, SDK providerów, bazy danych ani realnego checkoutu.
 
-## [PLACEHOLDER] Monetyzacja / billing
-- Ekran `Plan i płatności` (`/app/plan`): plan Demo, kredyty (mock), zużycie miesięczne, plany i metody płatności.
-- Model: kredyty/pay-per-use + subskrypcje + faktura B2B; jednostka = minuta materiału. Architektura **provider-agnostic** (`MockBillingProvider`).
-- **W demo nic nie jest pobierane**; żaden dostawca nie jest wpięty. Szczegóły i ryzyka: `docs/MONETIZATION.md`.
+## API-ready
 
-## Wymaga kluczy / zewnętrznych usług
-- Tryb api: `OPENAI_API_KEY`. Diaryzacja: token Hugging Face (przyszłość). Reszta: EXTERNAL_APIS.
-- Demo nie wymaga żadnego z powyższych.
+- OpenAI speech-to-text po `PIPELINE_MODE=api` i `OPENAI_API_KEY`.
+- Ekstrakcja audio z wideo przez ffmpeg jako etap techniczny.
 
-## Wymaga osobnego deployu / decyzji biznesowej
-- Frontend (Vercel) i worker (VPS/GPU lub tunel) deployowane osobno — decyzja + konfiguracja.
-- Wybór dostawców (ASR, diaryzacja, dźwięki, storage) — decyzja techniczno-kosztowa.
+## Placeholdery
 
-## Czego brakuje do kolejnych progów
-- Do live API test: klucz OpenAI + nagranie 30–60 s (bez zmiany kontraktu danych).
-- Do MVP: live transkrypcja + diaryzacja + dźwięki + persistencja + deploy.
-- Do produkcji: auth, limity/bezpieczeństwo uploadu, monitoring, rate limiting, storage, hardening.
+- Orkiestrator backendowy z realną decyzją providerów.
+- URL resolver i import captions z platform.
+- Import TXT/CSV/JSON i transkrypty spotkań.
+- Realna diaryzacja mówców.
+- Realne sound events / audio intelligence.
+- PDF WCAG report.
+- Billing credits z realnym saldem i checkoutem.
+- Auth, storage produkcyjny, monitoring, rate limiting.
+
+## Sound events jako wyróżnik
+
+Dźwięki niewerbalne są strategicznym wyróżnikiem Widźwięku. Produkt ma docelowo wykrywać i oceniać:
+
+- muzykę,
+- śmiech,
+- oklaski,
+- ciszę,
+- pukanie,
+- alarmy/dzwonki,
+- kroki/drzwi,
+- szum,
+- emocjonalne reakcje,
+- intro/outro,
+- zmianę nastroju muzyki.
+
+Nie każdy wykryty dźwięk trafia do napisów. System powinien proponować opisy tylko dla dźwięków istotnych dla
+zrozumienia materiału.
+
+## Co jest mockiem
+
+- Automatyczna decyzja orkiestratora jest modelem UI/dokumentacji, nie pełnym backendowym routerem.
+- Providerzy poza OpenAI są placeholderami.
+- Detekcja dźwięków i diarizacja są mock/manual.
+- Billing i kredyty nie pobierają pieniędzy.
+- URL ingestion nie wykonuje live requestów.
+
+## Co wymaga realnych API
+
+- Transkrypcja live: pierwszy krok OpenAI.
+- Alternatywni providerzy ASR: Deepgram, AssemblyAI, Google, Azure, AWS, Speechmatics itd.
+- Import captions z platform i URL extraction.
+- Realne sound events.
+- Realna diarizacja.
+- Realny billing.
+
+## Kolejny etap MVP
+
+1. Backendowy Orchestrator Strategy MVP.
+2. Source ingestion: upload + URL placeholder -> realny resolver tam, gdzie legalne.
+3. Existing captions import MVP.
+4. OpenAI live transcription.
+5. Sound events MVP.
+6. Persistent projects/storage.
+7. PDF report and institutional audit trail.
+8. Billing credits/usage.
+9. Production hardening.

@@ -11,6 +11,7 @@ import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
 import { DEMO_DOC } from "@/lib/demoDoc";
 import { probeAudioPresence } from "@/lib/audioProbe";
 import { parseSubtitles } from "@/lib/importSubs";
+import { DEFAULT_PROCESSING_DECISION } from "@/lib/orchestration";
 import { useWorkerUp } from "@/components/shell/AppShell";
 import PageHeader from "@/components/shell/PageHeader";
 import Section from "@/components/ui/Section";
@@ -46,7 +47,7 @@ function L({ n, children }: { n: number; children: React.ReactNode }) {
 function UsageEstimate({ durationMs }: { durationMs: number }) {
   const minutes = Math.max(1, Math.ceil(durationMs / 60000));
   const credits = estimateCredits(durationMs, { speakers: true, sounds: true, wcag: true });
-  const feats = ["Transkrypcja PL", "Mówcy (placeholder)", "Dźwięki (placeholder)", "Raport WCAG", "Eksport SRT/VTT"];
+  const feats = ["Sprawdzenie istniejących napisów", "Transkrypcja tylko gdy potrzebna", "Mówcy", "Dźwięki niewerbalne", "Walidacja WCAG", "Eksport SRT/VTT"];
   return (
     <motion.div variants={fadeUp} className="mt-4 rounded-xl border border-hair/70 bg-brand-50/30 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -57,6 +58,7 @@ function UsageEstimate({ durationMs }: { durationMs: number }) {
         {feats.map((f) => <span key={f} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-graphite ring-1 ring-hair/60">{f}</span>)}
       </div>
       <p className="mt-2 text-sm text-graphite">Szacowany koszt: <strong className="tnum">≈ {credits} kredytów</strong>. <span className="text-muted">W trybie demo kredyty nie są pobierane.</span></p>
+      <p className="mt-1 text-xs text-muted">Ścieżka automatyczna: {DEFAULT_PROCESSING_DECISION.path.slice(0, 4).join(" → ")}.</p>
     </motion.div>
   );
 }
@@ -68,6 +70,7 @@ function StudioInner() {
   const importRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [sourceUrl, setSourceUrl] = useState("");
   const [drag, setDrag] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [job, setJob] = useState<Job | null>(null);
@@ -80,6 +83,7 @@ function StudioInner() {
   const MAX_MB = 200;
   function pickFile(f: File | null) {
     setSample(false);
+    setSourceUrl("");
     if (!f) { setFile(null); return; }
     const okType = f.type.startsWith("audio/") || f.type.startsWith("video/") || /\.(mp3|wav|m4a|mp4|mov|mkv|aac|ogg|flac|webm)$/i.test(f.name);
     if (!okType) { setFile(null); setError("Nieobsługiwany format. Wgraj audio lub wideo (MP3, WAV, M4A, MP4, MOV...)."); return; }
@@ -91,7 +95,7 @@ function StudioInner() {
   }
 
   function runSample() {
-    setError(null); setFile(null); setSample(true); setPhase("processing");
+    setError(null); setFile(null); setSourceUrl(""); setSample(true); setPhase("processing");
     setTimeout(() => { setJob(buildSampleJob()); setPhase("done"); }, 900);
   }
 
@@ -113,6 +117,10 @@ function StudioInner() {
   useEffect(() => { if (params.get("sample") === "1") runSample(); }, []);
 
   async function handleRun() {
+    if (!file && sourceUrl.trim()) {
+      setError("Import z linku jest przygotowany jako placeholder. Demo pokazuje decyzję orkiestratora, ale nie wykonuje pobierania z platform ani scrapingu.");
+      return;
+    }
     if (!file) return;
     if (IS_STATIC_DEMO) {
       runSample();
@@ -163,6 +171,20 @@ function StudioInner() {
                 <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Uruchom demo na przykładzie</Button>
               </div>
             )}
+            <div className="mt-3 rounded-xl border border-hair/70 bg-white/60 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Icon name="external" size={18} className="text-brand-600" />
+                <label htmlFor="sourceUrl" className="text-sm font-medium text-graphite">Link do materiału</label>
+                <Badge tone="warn">placeholder</Badge>
+              </div>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <input id="sourceUrl" value={sourceUrl} onChange={(e) => { setSourceUrl(e.target.value); setFile(null); setSample(false); }}
+                  placeholder="YouTube, TikTok, Vimeo albo publiczny URL — orkiestrator najpierw sprawdzi dostępne napisy"
+                  className="focusring min-w-0 flex-1 rounded-xl border border-hair bg-white px-3 py-2.5 text-sm text-graphite placeholder:text-muted/70" />
+                <Button variant="secondary" icon="sparkles" onClick={handleRun} disabled={!sourceUrl.trim() || busy}>Sprawdź ścieżkę</Button>
+              </div>
+              <p className="mt-2 text-xs text-muted">Plan orkiestratora: sprawdzenie istniejących napisów → import transkryptu → ASR tylko gdy potrzebny. Demo nie pobiera materiałów z platform i nie obchodzi regulaminów.</p>
+            </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hair/70 bg-white/60 px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-graphite"><Icon name="captions" size={18} className="text-brand-600" /> Masz gotowe napisy? Zaimportuj i dopracuj pod WCAG.</div>
               <Button variant="secondary" icon="upload" loading={importing} disabled={workerUp === false} onClick={() => importRef.current?.click()}>Importuj SRT / VTT</Button>
@@ -184,7 +206,7 @@ function StudioInner() {
               </div>
             )}
 
-            {(file || sample) && <UsageEstimate durationMs={estMs} />}
+            {(file || sample || sourceUrl.trim()) && <UsageEstimate durationMs={estMs || DEMO_DOC.media.duration_ms} />}
             {audioWarn && (
               <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/5 px-3 py-2.5">
                 <Icon name="alert" size={16} className="mt-0.5 shrink-0 text-warn" />
@@ -193,8 +215,8 @@ function StudioInner() {
             )}
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Button onClick={handleRun} disabled={!file || busy || workerUp === false} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
-              {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> lub uruchom go lokalnie.</span>}
+              <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || workerUp === false} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
+              {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> albo uruchom worker w środowisku dev.</span>}
             </div>
           </motion.div>
         </Section>
