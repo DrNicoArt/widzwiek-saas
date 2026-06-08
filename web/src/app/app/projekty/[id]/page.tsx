@@ -31,6 +31,15 @@ export default function ProjectSummary() {
   const soundCount = doc.cues.filter((c) => c.kind === "sound").length;
   const nextAction = doc.wcag.compliant ? "Eksportuj materiał albo pobierz raport." : "Napraw wskazane problemy w edytorze.";
   const pipeline = doc.meta.pipeline;
+  const q = doc.meta.quality;
+  const dec = doc.meta.decision;
+  const SRC_LABEL: Record<string, string> = { demo: "Materiał demonstracyjny", "captions-import": "Import napisów", "local-file-asr": "Lokalna transkrypcja", "local-asr": "Lokalna transkrypcja", mock: "Demo" };
+  const SCORE_LABEL: { k: keyof NonNullable<typeof q>; l: string }[] = [
+    { k: "transcription", l: "Transkrypcja" }, { k: "diarization", l: "Mówcy" }, { k: "sound_events", l: "Dźwięki" },
+    { k: "segmentation", l: "Segmentacja" }, { k: "wcag", l: "WCAG" }, { k: "completeness", l: "Kompletność" },
+  ];
+  const overall = q ? Math.round(q.overall * 100) : null;
+  const verdict = overall == null ? null : overall >= 80 ? { tone: "ok" as const, t: "Gotowe do publikacji" } : overall >= 60 ? { tone: "warn" as const, t: "Do przeglądu" } : { tone: "err" as const, t: "Wymaga uwagi" };
   const cards = [
     { href: `${base}/napisy`, icon: "captions" as const, title: "Edytor napisów", desc: `${doc.cues.length} segmentów, problemy WCAG przypięte do cue` },
     { href: `${base}/mowcy`, icon: "users" as const, title: "Mówcy i dźwięki", desc: `${doc.speakers.length} mówców · ${soundCount} dźwięki dodane do captions` },
@@ -58,19 +67,34 @@ export default function ProjectSummary() {
         <div className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
           <h3 className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="sparkles" size={17} className="text-brand-600" /> Ścieżka orkiestratora</h3>
           <div className="space-y-2">
-            <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Strategia</span><span className="text-right font-medium text-graphite">Automatyczna</span></div>
-            <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Źródło transkryptu</span><span className="text-right font-medium text-graphite">{DEFAULT_PROCESSING_DECISION.transcriptSource}</span></div>
+            <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Strategia</span><span className="text-right font-medium text-graphite">{dec?.strategy === "automatic" || !dec ? "Automatyczna" : dec.strategy}</span></div>
+            <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Źródło transkryptu</span><span className="text-right font-medium text-graphite">{dec ? (SRC_LABEL[dec.transcript_source] ?? dec.transcript_source) : DEFAULT_PROCESSING_DECISION.transcriptSource}</span></div>
             <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Provider transkrypcji</span><span className="text-right font-medium text-graphite">{pipeline.asr}</span></div>
             <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Mówcy / dźwięki</span><span className="text-right font-medium text-graphite">{pipeline.diarization} · {pipeline.sound_events}</span></div>
             <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Koszt demo</span><span className="text-right font-medium text-graphite">≈ {credits} kredytów</span></div>
           </div>
         </div>
         <div className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
-          <h3 className="mb-3 inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="shield" size={17} className="text-brand-600" /> Quality layer</h3>
-          <p className="text-sm text-graphite">WCAG działa cały czas: w podsumowaniu jako status, w edytorze jako problemy do naprawy, a w eksporcie jako gotowość do publikacji.</p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {DEFAULT_PROCESSING_DECISION.path.slice(2).map((p) => <span key={p} className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] text-brand-700">{p}</span>)}
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="shield" size={17} className="text-brand-600" /> Ocena jakości</h3>
+            {overall != null && verdict && <Badge tone={verdict.tone}>{verdict.t}</Badge>}
           </div>
+          {overall != null && q ? (
+            <>
+              <div className="flex items-end gap-2"><span className="tnum text-3xl font-medium text-graphite">{overall}%</span><span className="pb-1 text-xs text-muted">Quality Score</span></div>
+              <div className="mt-3 space-y-1.5">
+                {SCORE_LABEL.map(({ k, l }) => (
+                  <div key={k} className="flex items-center gap-2 text-[11px]">
+                    <span className="w-20 shrink-0 text-muted">{l}</span>
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-brand-500" style={{ width: `${Math.round(q[k] * 100)}%` }} /></span>
+                    <span className="w-8 text-right tabular-nums text-muted">{Math.round(q[k] * 100)}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-graphite">WCAG działa cały czas: status w podsumowaniu, problemy w edytorze, gotowość w eksporcie.</p>
+          )}
         </div>
       </motion.div>
       <div className="grid gap-4 sm:grid-cols-2">

@@ -31,5 +31,10 @@ export const DEMO_DOC: CaptionDocument = {
         message: 'Linia ma 42 znaków — zalecane ≤37: "Dzień dobry, witam w naszym kursie online."' },
     ],
   },
-  meta: { generated_at: "2024-06-02T10:00:00Z", pipeline: { asr: "mock", diarization: "mock", sound_events: "mock" } },
+  meta: {
+    generated_at: "2024-06-02T10:00:00Z",
+    pipeline: { asr: "mock", diarization: "mock", sound_events: "mock" },
+    decision: { strategy: "automatic", transcript_source: "demo", no_api_first: true, fallback_used: true, fallbacks: ["faster-whisper-local -> demo-transcript"], notes: ["Demo: przykładowy transkrypt, bez pliku i bez kluczy API."] },
+    quality: { transcription: 0.74, diarization: 0.62, sound_events: 0.55, segmentation: 0.9, wcag: 0.94, completeness: 0.9, overall: 0.78 },
+  },
 };
