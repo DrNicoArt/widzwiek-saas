@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import type { CaptionDocument, CaptionStyle, CueKind, Speaker } from "@/lib/contract";
 import { DEFAULT_STYLE, FONTS, SIZE_PRESETS, fontCss, contrastRatio, msToTimecode } from "@/lib/contract";
 import { updateDocument } from "@/lib/api";
+import { autoFix } from "@/lib/autofix";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import { Badge, type Tone } from "@/components/ui/Badge";
@@ -144,6 +145,29 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
     finally { setSaving(false); }
   }, [doc, jobId, onSaved, rows, speakers, style]);
 
+  const fixAll = useCallback(async () => {
+    snapshot();
+    setSaving(true); setMsg(null);
+    try {
+      const base: CaptionDocument = {
+        ...doc, speakers, style,
+        cues: rows.map((r, i) => { const speech = r.kind === "speech"; const text = r.tokens && r.tokens.length ? r.tokens.map((t) => t.text).join(" ") : r.text; return { id: r.id, index: i + 1, start_ms: Math.round(r.start_ms), end_ms: Math.round(r.end_ms), kind: r.kind, speaker_id: speech ? r.speaker_id : null, text, lines: [text], tokens: speech ? r.tokens ?? undefined : undefined }; }),
+      };
+      const { doc: fixedDoc, report } = autoFix(base);
+      const job = await updateDocument(jobId, fixedDoc);
+      if (job.result) {
+        onSaved(job.result);
+        const nrows = job.result.cues.map((c) => ({ id: c.id, start_ms: c.start_ms, end_ms: c.end_ms, text: c.text, kind: c.kind, speaker_id: c.speaker_id, tokens: c.tokens ?? undefined }));
+        const rstyle = job.result.style ?? style;
+        setRows(nrows); setStyle(rstyle); setIssues(job.result.wcag?.issues ?? []);
+        setSavedKey(JSON.stringify({ speakers, rows: nrows, style: rstyle }));
+        const ok = job.result.wcag.compliant;
+        setMsg({ tone: ok ? "ok" : "warn", text: `Naprawiono automatycznie: ${report.timing} czasów, ${report.condensed} skróconych linii, zawijanie wg stylu. ${ok ? "Materiał spełnia WCAG 2.1 AA." : `Zostało ${job.result.wcag.stats.error_count} bł. / ${job.result.wcag.stats.warning_count} ostrz. do podpisu człowieka.`}` });
+      }
+    } catch (e) { setMsg({ tone: "err", text: e instanceof Error ? e.message : "Nie udało się naprawić." }); }
+    finally { setSaving(false); }
+  }, [doc, jobId, onSaved, rows, speakers, style, snapshot]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
@@ -170,7 +194,8 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
             <button onClick={redo} disabled={!future.length} aria-label="Ponów (Ctrl+Y)" title="Ponów (Ctrl+Y)" className="focusring border-l border-hair px-2 py-1.5 text-graphite hover:bg-slate-50 disabled:opacity-40"><Icon name="refresh" size={15} /></button>
           </div>
           <Button variant="secondary" icon="clock" onClick={autofixTiming}>Auto-popraw timing</Button>
-          <Button onClick={save} loading={saving} icon="check">Zapisz zmiany</Button>
+          <Button onClick={fixAll} loading={saving} icon="sparkles" title="Naprawia timing, zawijanie i tempo czytania jednym kliknięciem">Napraw wszystko</Button>
+          <Button variant="secondary" onClick={save} loading={saving} icon="check">Zapisz zmiany</Button>
         </div>
       </div>
 

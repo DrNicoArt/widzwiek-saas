@@ -98,3 +98,13 @@ body {
   .spotlight::after { display: none; }
   .grain::before { display: none; }
 }
+
+/* Druk raportu zgodności (dowód do publikacji / kontroli) — chowamy nawigację, zostaje sam raport. */
+@media print {
+  aside, header, .no-print, .grain { display: none !important; }
+  main { padding: 0 !important; }
+  html, body { background: #fff !important; }
+  .print-only { display: block !important; }
+  .print-card { box-shadow: none !important; border-color: #d0d7de !important; break-inside: avoid; }
+}
+.print-only { display: none; }
