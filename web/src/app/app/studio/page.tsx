@@ -249,7 +249,7 @@ function StudioInner() {
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || (workerUp === false && !IS_STATIC_DEMO && !hasKey)} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
-              <Button variant="secondary" onClick={() => file && runLocal(file)} disabled={!file || busy} icon="sparkles" title="Transkrypcja Whisper w Twojej przeglądarce — bez API, bez wysyłania pliku na serwer. Pierwszy raz pobiera model (~150 MB).">Transkrybuj bez API (w przeglądarce)</Button>
+              <Button variant="secondary" onClick={() => file && runLocal(file)} disabled={!file || busy} icon="sparkles" title="Transkrypcja Whisper w Twojej przeglądarce — bez API, bez wysyłania pliku na serwer. Pierwszy raz pobiera model (~75 MB).">Transkrybuj bez API (w przeglądarce)</Button>
               {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> albo uruchom worker w środowisku dev.</span>}
               {hasKey ? (
                 <span className="inline-flex items-center gap-1.5 text-xs text-ok"><Icon name="checkCircle" size={14} /> Klucz dostawcy wykryty — plik zostanie przetranskrybowany w Twojej przeglądarce.</span>

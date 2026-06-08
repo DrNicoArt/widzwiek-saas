@@ -9,7 +9,7 @@ import { analyzeSounds } from "./soundScan";
 
 // transformers.js v3 z CDN. Function(import) omija bundler Next i typowanie TS (zwraca any).
 const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2";
-export const LOCAL_ASR_MODEL = "Xenova/whisper-base"; // multilingual; obsługuje polski
+export const LOCAL_ASR_MODEL = "Xenova/whisper-tiny"; // multilingual; lekki (~75 MB), szybki start
 const TARGET_SR = 16000;
 
 export interface LocalProgress { pct: number; label: string }
