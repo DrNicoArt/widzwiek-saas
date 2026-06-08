@@ -225,7 +225,7 @@ function UstawieniaInner() {
 
           {section === "zrodla" && (
             <Card title="Źródła transkryptu i napisów" desc="To jest ważniejsze niż sam ASR: najtańsza ścieżka często zaczyna się od gotowych napisów.">
-              <ProviderList providers={TRANSCRIPT_SOURCE_PROVIDERS} />
+              <p className="text-sm text-graphite">Orkiestrator sam sprawdza źródła w tej kolejności — nie wybierasz dostawców ręcznie.</p>
               <details className="mt-4 rounded-xl border border-hair/60 bg-white px-3 py-2.5">
                 <summary className="cursor-pointer text-sm font-medium text-graphite">Zaawansowane: kolejność kaskadowa</summary>
                 <ol className="mt-3 space-y-1.5 text-xs text-muted">
@@ -245,15 +245,10 @@ function UstawieniaInner() {
                   <p className="text-sm font-medium text-graphite">Orkiestrator wybiera provider dopiero po sprawdzeniu źródła transkryptu.</p>
                   <p className="mt-1 text-xs text-muted">Dzięki temu import napisów, auto captions i gotowe transkrypty mogą obniżać koszt bez ręcznej decyzji użytkownika.</p>
                 </div>
-                <details className="mt-4 rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-                  <summary className="cursor-pointer text-sm font-medium text-graphite">Zaawansowane: providerzy transkrypcji</summary>
-                  <div className="mt-3">
-                    <ProviderList providers={TRANSCRIPTION_PROVIDERS} compact />
-                  </div>
-                </details>
+                <p className="mt-3 text-xs text-muted">Pełna lista dostawców i ich statusy jest w trybie developerskim.</p>
               </Card>
               <Card title="Rozpoznawanie mówców" desc="Mówcy są osobną capability, nie efektem ubocznym ASR.">
-                <ProviderList providers={OTHER_PROVIDER_GROUPS.filter((p) => p.kind === "diarization")} />
+                <p className="text-sm text-graphite">Mówcy są wykrywani automatycznie (w demo na materiale przykładowym). Nazwy i kolory poprawisz w edytorze — bez wyboru dostawców.</p>
               </Card>
             </div>
           )}
@@ -289,12 +284,6 @@ function UstawieniaInner() {
                     </label>
                   ))}
                 </div>
-              </Card>
-              <Card title="Providerzy dźwięków" desc="W demo są mock/manual labels. Realne detektory są placeholderami, ale capability jest pierwszoklasowa.">
-                <details className="rounded-xl border border-hair/60 bg-white px-3 py-2.5" open>
-                  <summary className="cursor-pointer text-sm font-medium text-graphite">Zaawansowane: statusy providerów</summary>
-                  <div className="mt-3"><ProviderList providers={SOUND_EVENT_PROVIDERS} compact /></div>
-                </details>
               </Card>
             </div>
           )}
