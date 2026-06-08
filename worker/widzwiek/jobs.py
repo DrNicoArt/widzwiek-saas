@@ -12,6 +12,8 @@ from typing import Optional
 from .config import settings
 from .contracts import CaptionDocument, Cue, CueKind, Job, JobStatus
 from .pipeline import formatter, run_pipeline
+from .pipeline.runner import run_pipeline_from_segments
+from .pipeline.url_ingest import ingest_url_captions
 from .wcag import validate
 
 
@@ -83,6 +85,27 @@ class JobStore:
         self._touch(job, JobStatus.processing)
         try:
             doc: CaptionDocument = run_pipeline(job.filename or "sample", audio_path)
+            job.result = doc
+            self._touch(job, JobStatus.done)
+            self._persist(job)
+        except Exception as exc:  # noqa: BLE001
+            job.error = str(exc)
+            self._touch(job, JobStatus.error)
+        return job
+
+    def process_url(self, job: Job, url: str) -> Job:
+        """URL -> istniejące napisy/auto captions -> CaptionDocument bez płatnego API."""
+        self._touch(job, JobStatus.processing)
+        try:
+            ingest = ingest_url_captions(url)
+            doc = run_pipeline_from_segments(
+                ingest.filename,
+                ingest.segments,
+                ingest.sounds,
+                transcript_source=ingest.source,
+            )
+            doc.meta.decision.notes.extend(ingest.notes)
+            job.filename = ingest.filename
             job.result = doc
             self._touch(job, JobStatus.done)
             self._persist(job)

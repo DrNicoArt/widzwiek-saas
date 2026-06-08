@@ -1,15 +1,11 @@
 """Etap ASR (transkrypcja).
 
-Tryby:
-- Mock (PoC) — MockASRProvider, dane z mock_data.
-- API — OpenAIASRProvider, realna transkrypcja przez OpenAI audio transcriptions.
-
-Provider API jest łatwo wymienny na innego dostawcę: wystarczy nowa klasa
-implementująca ASRProvider + wpięcie w pipeline/providers.py. Sekrety wyłącznie z ENV.
+Kolejność produktu: źródła napisów/import -> lokalne/no-key ASR -> płatne API jako premium/fallback.
 """
 from __future__ import annotations
 
 from typing import Optional
+import math
 
 from ..contracts import MediaInfo
 from .base import ASRProvider, SpeechSegment
@@ -20,7 +16,53 @@ class MockASRProvider(ASRProvider):
     name = "mock"
 
     def transcribe(self, audio_path: Optional[str], media: MediaInfo) -> list[SpeechSegment]:
-        return mock_data.mock_transcribe()
+        return [
+            SpeechSegment(s.start_ms, s.end_ms, s.text, s.speaker_id, confidence=0.86, source=self.name)
+            for s in mock_data.mock_transcribe()
+        ]
+
+
+class FasterWhisperASRProvider(ASRProvider):
+    """Lokalna transkrypcja bez kluczy API przez faster-whisper/CTranslate2."""
+    name = "faster-whisper-local"
+
+    def __init__(self, model_size: str = "small", language: str = "pl", compute_type: str = "int8") -> None:
+        self._model_size = model_size
+        self._language = language
+        self._compute_type = compute_type
+
+    def transcribe(self, audio_path: Optional[str], media: MediaInfo) -> list[SpeechSegment]:
+        if not audio_path:
+            raise FileNotFoundError("Brak pliku audio dla lokalnej transkrypcji.")
+        try:
+            from faster_whisper import WhisperModel
+        except ImportError as exc:
+            raise RuntimeError(
+                "Brak pakietu 'faster-whisper'. Zainstaluj zależności workera (`pip install -r requirements.txt`) "
+                "albo użyj importu SRT/VTT/url captions. Płatne API nie jest wymagane."
+            ) from exc
+
+        model = WhisperModel(self._model_size, device="cpu", compute_type=self._compute_type)
+        segments, _info = model.transcribe(
+            audio_path,
+            language=self._language,
+            vad_filter=True,
+            word_timestamps=True,
+            beam_size=5,
+        )
+        out: list[SpeechSegment] = []
+        for seg in segments:
+            text = (getattr(seg, "text", "") or "").strip()
+            if not text:
+                continue
+            start_ms = int(round(float(getattr(seg, "start", 0.0) or 0.0) * 1000))
+            end_ms = int(round(float(getattr(seg, "end", 0.0) or 0.0) * 1000))
+            if end_ms <= start_ms:
+                end_ms = start_ms + 1000
+            avg_logprob = float(getattr(seg, "avg_logprob", -0.7) or -0.7)
+            confidence = max(0.05, min(0.98, math.exp(avg_logprob)))
+            out.append(SpeechSegment(start_ms, end_ms, text, confidence=round(confidence, 3), source=self.name))
+        return out
 
 
 class OpenAIASRProvider(ASRProvider):
@@ -93,19 +135,22 @@ def map_transcription(data: dict) -> list[SpeechSegment]:
         end_ms = int(round(float(end) * 1000))
         if end_ms <= start_ms:
             end_ms = start_ms + 1000
-        out.append(SpeechSegment(start_ms=start_ms, end_ms=end_ms, text=text))
+        out.append(SpeechSegment(start_ms=start_ms, end_ms=end_ms, text=text, confidence=0.78, source="openai"))
 
     if not out:
         text = (data.get("text") or "").strip()
         if text:
             dur = data.get("duration")
             end_ms = int(round(float(dur) * 1000)) if dur else max(2000, len(text) * 60)
-            out.append(SpeechSegment(start_ms=0, end_ms=end_ms, text=text))
+            out.append(SpeechSegment(start_ms=0, end_ms=end_ms, text=text, confidence=0.62, source="openai"))
     return out
 
 
 def get_asr_provider(name: str) -> ASRProvider:
     """Zachowane dla zgodności (nadpisania per-etap). Wybór trybu robi providers.py."""
+    if name in ("faster-whisper", "faster-whisper-local", "local"):
+        from ..config import settings
+        return FasterWhisperASRProvider(settings.local_asr_model)
     if name == "openai":
         from ..config import settings
         return OpenAIASRProvider(settings.openai_api_key, settings.openai_transcription_model)

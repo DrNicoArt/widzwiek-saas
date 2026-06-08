@@ -1,4 +1,4 @@
-"""Offline checker gotowości trybu API — bez żadnych wywołań sieciowych ani płatnych.
+"""Offline checker gotowości workera — bez wywołań sieciowych ani płatnych.
 
 Sprawdza tylko lokalną konfigurację: tryb, obecność klucza (czy ustawiony, NIE waliduje go),
 czy pakiet `openai` jest zainstalowany, czy `ffmpeg` jest w PATH. Używany też przez /health.
@@ -17,6 +17,9 @@ def readiness(s: Settings = settings) -> dict:
     mode = (s.pipeline_mode or "mock").lower()
     api_key_present = bool(s.openai_api_key)
     openai_installed = importlib.util.find_spec("openai") is not None
+    faster_whisper_installed = importlib.util.find_spec("faster_whisper") is not None
+    ina_installed = importlib.util.find_spec("inaSpeechSegmenter") is not None
+    yt_dlp_present = shutil.which("yt-dlp") is not None
     ffmpeg_present = shutil.which("ffmpeg") is not None
 
     notes: list[str] = []
@@ -27,14 +30,26 @@ def readiness(s: Settings = settings) -> dict:
             notes.append("Pakiet 'openai' niezainstalowany — odkomentuj w requirements.txt i zainstaluj.")
         if not ffmpeg_present:
             notes.append("ffmpeg niedostępny — wideo pójdzie wprost do API (limit 25 MB).")
+    elif mode in ("auto", "local", "free"):
+        if not faster_whisper_installed:
+            notes.append("Brak faster-whisper — lokalny ASR nie ruszy po uploadzie. Zainstaluj requirements.txt.")
+        if not ffmpeg_present:
+            notes.append("Brak ffmpeg — ekstrakcja audio z wideo i probing czasu będą ograniczone.")
+        if not yt_dlp_present:
+            notes.append("Brak yt-dlp — URL captions import będzie niedostępny.")
+        if not ina_installed:
+            notes.append("inaSpeechSegmenter niedostępny — sound events użyją heurystyk przerw/ciszy.")
     else:
-        notes.append("Tryb mock — demo działa bez kluczy, openai i ffmpeg.")
+        notes.append("Tryb mock — tylko demo/testy. Produktowy tryb no-API-first to auto/local/free.")
 
-    ready = mode != "api" or (api_key_present and openai_installed)
+    ready = (mode == "api" and api_key_present and openai_installed) or mode in ("mock", "auto", "local", "free")
     return {
         "mode": mode,
         "api_key_present": api_key_present,
         "openai_installed": openai_installed,
+        "faster_whisper_installed": faster_whisper_installed,
+        "ina_speech_segmenter_installed": ina_installed,
+        "yt_dlp_present": yt_dlp_present,
         "ffmpeg_present": ffmpeg_present,
         "ready": ready,
         "notes": notes,
@@ -44,13 +59,16 @@ def readiness(s: Settings = settings) -> dict:
 def main() -> int:
     r = readiness()
     print("=" * 56)
-    print("WIDŹWIĘK — gotowość trybu API (offline, bez wywołań sieci)")
+    print("WIDŹWIĘK — gotowość workera (offline, bez wywołań sieci)")
     print("=" * 56)
     print(f"PIPELINE_MODE      : {r['mode']}")
     print(f"OPENAI_API_KEY     : {'ustawiony' if r['api_key_present'] else 'BRAK'}")
+    print(f"faster-whisper     : {'OK' if r['faster_whisper_installed'] else 'brak'}")
+    print(f"yt-dlp             : {'OK' if r['yt_dlp_present'] else 'brak'}")
+    print(f"inaSpeechSegmenter : {'OK' if r['ina_speech_segmenter_installed'] else 'brak'}")
     print(f"pakiet openai      : {'OK' if r['openai_installed'] else 'brak'}")
     print(f"ffmpeg w PATH      : {'OK' if r['ffmpeg_present'] else 'brak'}")
-    print(f"GOTOWY DO API      : {'TAK' if r['ready'] else 'NIE'}")
+    print(f"GOTOWY             : {'TAK' if r['ready'] else 'NIE'}")
     for n in r["notes"]:
         print(f"  - {n}")
     # exit 0 zawsze (to checker, nie test); 0 = informacyjnie

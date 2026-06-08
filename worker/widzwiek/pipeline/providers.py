@@ -1,32 +1,28 @@
-"""Centralny wybór silników pipeline'u na podstawie PIPELINE_MODE.
+"""Centralny wybór providerów.
 
-To jedyne miejsce, które tłumaczy tryb -> konkretne providery. Dzięki temu
-dodanie realnego etapu nie narusza orkiestracji (runner) ani kontraktu danych.
-
-- mock : pełna symulacja (jak dotychczas) — działa bez kluczy API.
-- api  : realna transkrypcja (OpenAI) + diaryzacja/dźwięki jako TBD.
-
-Nadpisania per-etap (WIDZWIEK_*_PROVIDER) mają pierwszeństwo, jeśli ustawione.
+Zasada produktu: no-API-first. Tryby auto/local/free wybierają lokalne i darmowe
+mechanizmy. Tryb api to płatna/premium transkrypcja, nie fundament produktu.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 from ..config import Settings
-from .asr import MockASRProvider, OpenAIASRProvider, get_asr_provider
+from .asr import FasterWhisperASRProvider, MockASRProvider, OpenAIASRProvider, get_asr_provider
 from .base import ASRProvider, DiarizationProvider, SoundEventProvider
 from .diarization import (
     MockDiarizationProvider,
+    HeuristicTurnDiarizationProvider,
     SingleSpeakerDiarizationProvider,
     get_diarization_provider,
 )
 from .sound_events import (
     MockSoundEventProvider,
-    NoopSoundEventProvider,
+    OpenAudioSoundEventProvider,
     get_sound_provider,
 )
 
-VALID_MODES = ("mock", "api")
+VALID_MODES = ("auto", "local", "free", "mock", "api")
 
 
 @dataclass
@@ -47,8 +43,12 @@ def select_providers(settings: Settings) -> Providers:
         asr: ASRProvider = OpenAIASRProvider(
             settings.openai_api_key, settings.openai_transcription_model
         )
-        diar: DiarizationProvider = SingleSpeakerDiarizationProvider()   # TBD
-        sound: SoundEventProvider = NoopSoundEventProvider()             # TBD
+        diar: DiarizationProvider = HeuristicTurnDiarizationProvider()
+        sound: SoundEventProvider = OpenAudioSoundEventProvider() if settings.enable_sound_events else get_sound_provider("none")
+    elif mode in ("auto", "local", "free"):
+        asr = FasterWhisperASRProvider(settings.local_asr_model, compute_type=settings.local_asr_compute_type)
+        diar = HeuristicTurnDiarizationProvider()
+        sound = OpenAudioSoundEventProvider() if settings.enable_sound_events else get_sound_provider("none")
     else:  # mock
         asr = MockASRProvider()
         diar = MockDiarizationProvider()

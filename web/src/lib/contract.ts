@@ -72,6 +72,23 @@ export interface CaptionDocument {
   meta: {
     generated_at: string;
     pipeline: { asr: string; diarization: string; sound_events: string };
+    decision?: {
+      strategy: string;
+      transcript_source: string;
+      no_api_first: boolean;
+      fallback_used: boolean;
+      fallbacks: string[];
+      notes: string[];
+    };
+    quality?: {
+      transcription: number;
+      diarization: number;
+      sound_events: number;
+      segmentation: number;
+      wcag: number;
+      completeness: number;
+      overall: number;
+    };
   };
 }
 

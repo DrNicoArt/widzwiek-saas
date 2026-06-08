@@ -113,9 +113,30 @@ class PipelineMeta(BaseModel):
     sound_events: str = "mock"
 
 
+class QualityScores(BaseModel):
+    transcription: float = Field(default=0.0, ge=0.0, le=1.0)
+    diarization: float = Field(default=0.0, ge=0.0, le=1.0)
+    sound_events: float = Field(default=0.0, ge=0.0, le=1.0)
+    segmentation: float = Field(default=0.0, ge=0.0, le=1.0)
+    wcag: float = Field(default=0.0, ge=0.0, le=1.0)
+    completeness: float = Field(default=0.0, ge=0.0, le=1.0)
+    overall: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class ProcessingDecisionMeta(BaseModel):
+    strategy: str = "automatic"
+    transcript_source: str = "mock"
+    no_api_first: bool = True
+    fallback_used: bool = False
+    fallbacks: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
 class DocumentMeta(BaseModel):
     generated_at: str = Field(default_factory=_now_iso)
     pipeline: PipelineMeta = Field(default_factory=PipelineMeta)
+    decision: ProcessingDecisionMeta = Field(default_factory=ProcessingDecisionMeta)
+    quality: QualityScores = Field(default_factory=QualityScores)
 
 
 class CaptionStyle(BaseModel):
