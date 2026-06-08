@@ -33,7 +33,7 @@ export default function AudytBiblioteki() {
       catch { setNote({ tone: "warn", text: `Pominięto „${f.name}" — nie rozpoznano jako SRT/VTT.` }); }
     }
     add(next); setBusy(false);
-    if (next.length) setNote({ tone: "ok", text: `Dodano ${next.length} materiał(y) do audytu.` });
+    if (next.length) setNote({ tone: "ok", text: `Dodano ${next.length} materiał(y) do skanowania.` });
   }
 
   function onPaste() {
@@ -60,7 +60,7 @@ export default function AudytBiblioteki() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <PageHeader icon="shield" title="Audyt biblioteki" desc="Sprawdź wiele materiałów naraz i otrzymaj jeden werdykt zgodności WCAG dla całej organizacji — z rankingiem najczęstszych problemów." />
+      <PageHeader icon="search" title="Skaner WCAG" desc="Sprawdź wiele materiałów naraz i otrzymaj jeden werdykt zgodności WCAG dla całej organizacji — z rankingiem najczęstszych problemów." />
 
       {/* Wsad */}
       <motion.div initial="hidden" animate="show" variants={fadeUp} className="mb-6 rounded-2xl border border-hair/70 bg-white/85 p-5 shadow-card backdrop-blur-sm">
@@ -71,7 +71,7 @@ export default function AudytBiblioteki() {
             className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-hair bg-brand-50/30 p-6 text-center">
             <span className="mb-2 grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name="upload" size={22} /></span>
             <p className="text-sm font-medium text-graphite">Przeciągnij wiele plików SRT / VTT</p>
-            <p className="mt-0.5 text-xs text-muted">albo wybierz je z dysku — audyt policzy całą bibliotekę naraz</p>
+            <p className="mt-0.5 text-xs text-muted">albo wybierz je z dysku — skaner policzy całą bibliotekę naraz</p>
             <Button variant="secondary" icon="folder" className="mt-3" onClick={() => fileRef.current?.click()}>Wybierz pliki</Button>
             <input ref={fileRef} type="file" accept=".srt,.vtt" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
           </div>
