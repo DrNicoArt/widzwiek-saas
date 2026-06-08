@@ -1,5 +1,6 @@
 // Klient API workera. Frontend NIE liczy WCAG ani nie formatuje napisów — tylko wywołuje worker.
 import type { Job, CaptionDocument } from "./contract";
+import { finalizeDoc } from "./wcagClient";
 import { buildSampleJob } from "./sampleJob";
 
 export const WORKER_URL =
@@ -48,7 +49,7 @@ function makeStaticJob(filename?: string, document?: CaptionDocument): Job {
     ...job,
     id: "sample-demo",
     filename: filename || job.filename,
-    result: document ?? job.result,
+    result: document ? finalizeDoc(document) : job.result,
   };
   return staticJob;
 }
