@@ -1,29 +1,28 @@
-// Transkrypcja CAŁKOWICIE bez API — Whisper uruchamiany w przeglądarce przez transformers.js
-// (WebGPU jeśli dostępne, inaczej WASM). Model pobiera się raz z CDN do cache przeglądarki.
-// Audio dekodujemy do 16 kHz mono (wymóg Whisper). Dźwięki niewerbalne: istniejąca heurystyka audio.
-// Uwaga: pierwszy przebieg pobiera ~150 MB (whisper-base) i jest wolniejszy niż API — to cena braku API.
+// Transkrypcja CAŁKOWICIE bez API — Whisper w przeglądarce (transformers.js, WebGPU/WASM).
+// Model wybierany przez użytkownika (tiny/base/small), pobierany raz z CDN do cache przeglądarki.
+// Audio dekodowane do 16 kHz mono. Dźwięki niewerbalne: AST/AudioSet (real), fallback do heurystyki.
 import type { CaptionDocument, Cue } from "./contract";
 import { finalizeDoc } from "./wcagClient";
 import { heuristicTurns } from "./enrich";
 import { analyzeSounds } from "./soundScan";
-
-// transformers.js v3 z CDN. Function(import) omija bundler Next i typowanie TS (zwraca any).
-const TRANSFORMERS_URL = "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2";
-export const LOCAL_ASR_MODEL = "Xenova/whisper-tiny"; // multilingual; lekki (~75 MB), szybki start
-const TARGET_SR = 16000;
+import { detectSounds } from "./localSound";
+import { loadTransformers, decodeTo16kMono } from "./transformersClient";
+import { getAsrModel } from "./asrModel";
 
 export interface LocalProgress { pct: number; label: string }
 export type ProgressFn = (p: LocalProgress) => void;
 
 interface Seg { start: number; end: number; text: string } // ms
 
-let _pipe: any = null;
+// eslint-disable-next-line
+const _pipes: Record<string, any> = {};
 
-async function loadPipeline(onProgress?: ProgressFn): Promise<any> {
-  if (_pipe) return _pipe;
-  const mod: any = await (Function("u", "return import(u)")(TRANSFORMERS_URL));
-  const { pipeline } = mod;
-  _pipe = await pipeline("automatic-speech-recognition", LOCAL_ASR_MODEL, {
+// eslint-disable-next-line
+async function loadPipeline(model: string, onProgress?: ProgressFn): Promise<any> {
+  if (_pipes[model]) return _pipes[model];
+  const mod = await loadTransformers();
+  _pipes[model] = await mod.pipeline("automatic-speech-recognition", model, {
+    // eslint-disable-next-line
     progress_callback: (p: any) => {
       if (!onProgress) return;
       if (p?.status === "progress" && typeof p.progress === "number") {
@@ -33,33 +32,19 @@ async function loadPipeline(onProgress?: ProgressFn): Promise<any> {
       }
     },
   });
-  return _pipe;
-}
-
-async function decodeTo16kMono(file: File): Promise<Float32Array> {
-  const buf = await file.arrayBuffer();
-  const AC: typeof AudioContext = (window.AudioContext || (window as any).webkitAudioContext);
-  const tmp = new AC();
-  const decoded = await tmp.decodeAudioData(buf.slice(0));
-  tmp.close().catch(() => {});
-  const frames = Math.ceil(decoded.duration * TARGET_SR);
-  const off = new OfflineAudioContext(1, Math.max(1, frames), TARGET_SR);
-  const src = off.createBufferSource();
-  src.buffer = decoded;
-  src.connect(off.destination);
-  src.start();
-  const rendered = await off.startRendering();
-  return rendered.getChannelData(0);
+  return _pipes[model];
 }
 
 export async function transcribeLocally(file: File, onProgress?: ProgressFn): Promise<CaptionDocument> {
+  const model = getAsrModel();
   onProgress?.({ pct: 0, label: "Ładowanie silnika transkrypcji w przeglądarce…" });
-  const transcriber = await loadPipeline(onProgress);
+  const transcriber = await loadPipeline(model, onProgress);
 
   onProgress?.({ pct: 100, label: "Dekodowanie audio…" });
   const audio = await decodeTo16kMono(file);
 
   onProgress?.({ pct: 0, label: "Transkrypcja w toku (lokalnie, bez API)…" });
+  // eslint-disable-next-line
   const out: any = await transcriber(audio, {
     language: "polish",
     task: "transcribe",
@@ -68,6 +53,7 @@ export async function transcribeLocally(file: File, onProgress?: ProgressFn): Pr
     stride_length_s: 5,
   });
 
+  // eslint-disable-next-line
   const chunks: any[] = Array.isArray(out?.chunks) ? out.chunks : [];
   let segs: Seg[] = chunks
     .map((c) => {
@@ -83,15 +69,23 @@ export async function transcribeLocally(file: File, onProgress?: ProgressFn): Pr
     id: `c${i + 1}`, index: i + 1, start_ms: s.start, end_ms: s.end, kind: "speech", speaker_id: null, lines: [s.text], text: s.text,
   }));
 
-  onProgress?.({ pct: 100, label: "Wykrywanie dźwięków niewerbalnych…" });
+  // Dźwięki niewerbalne: najpierw realny model (AST/AudioSet), w razie błędu — heurystyka audio.
+  onProgress?.({ pct: 100, label: "Rozpoznawanie dźwięków niewerbalnych…" });
   let soundProvider = "none";
+  let sounds: Cue[] = [];
   try {
-    const sounds = await analyzeSounds(file, cues.map((c) => ({ start_ms: c.start_ms, end_ms: c.end_ms })));
-    if (sounds.length) {
-      cues = [...cues, ...sounds].sort((a, b) => a.start_ms - b.start_ms).map((c, i) => ({ ...c, index: i + 1 }));
-      soundProvider = "heuristic-audio";
-    }
-  } catch { /* best-effort */ }
+    sounds = await detectSounds(file);
+    if (sounds.length) soundProvider = "ast-audioset";
+  } catch { /* model dźwięków niedostępny — spróbuj heurystyki */ }
+  if (!sounds.length) {
+    try {
+      sounds = await analyzeSounds(file, cues.map((c) => ({ start_ms: c.start_ms, end_ms: c.end_ms })));
+      if (sounds.length) soundProvider = "heuristic-audio";
+    } catch { /* best-effort */ }
+  }
+  if (sounds.length) {
+    cues = [...cues, ...sounds].sort((a, b) => a.start_ms - b.start_ms).map((c, i) => ({ ...c, index: i + 1 }));
+  }
 
   const duration = cues.length ? Math.max(...cues.map((c) => c.end_ms)) : 0;
   const doc: CaptionDocument = {
@@ -101,8 +95,8 @@ export async function transcribeLocally(file: File, onProgress?: ProgressFn): Pr
     wcag: { target: "WCAG 2.1 AA", compliant: false, generated_at: new Date().toISOString(), stats: { cue_count: cues.length, error_count: 0, warning_count: 0 }, issues: [] },
     meta: {
       generated_at: new Date().toISOString(),
-      pipeline: { asr: `local:${LOCAL_ASR_MODEL}`, diarization: "heuristic", sound_events: soundProvider },
-      decision: { strategy: "automatic", transcript_source: "local-browser-asr", no_api_first: true, fallback_used: false, fallbacks: [], notes: ["Transkrypcja w przeglądarce (Whisper/transformers.js), bez API i bez wysyłania pliku na serwer."] },
+      pipeline: { asr: `local:${model}`, diarization: "heuristic", sound_events: soundProvider },
+      decision: { strategy: "automatic", transcript_source: "local-browser-asr", no_api_first: true, fallback_used: false, fallbacks: [], notes: ["Transkrypcja i dźwięki w przeglądarce (transformers.js), bez API i bez wysyłania pliku na serwer."] },
     },
   };
   onProgress?.({ pct: 100, label: "Gotowe." });
