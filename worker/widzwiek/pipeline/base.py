@@ -21,6 +21,8 @@ class SpeechSegment:
     end_ms: int
     text: str
     speaker_id: Optional[str] = None
+    confidence: float = 0.0
+    source: str = "unknown"
 
 
 @dataclass
@@ -28,6 +30,9 @@ class SoundEvent:
     start_ms: int
     end_ms: int
     label: str  # opis w nawiasach kwadratowych, np. "[oklaski]"
+    confidence: float = 0.0
+    source: str = "unknown"
+    relevance: str = "unknown"
 
 
 @dataclass
@@ -61,5 +66,10 @@ class SoundEventProvider(ABC):
     name: str = "abstract"
 
     @abstractmethod
-    def detect(self, audio_path: Optional[str], media: MediaInfo) -> list[SoundEvent]:
+    def detect(
+        self,
+        audio_path: Optional[str],
+        media: MediaInfo,
+        speech_segments: Optional[list[SpeechSegment]] = None,
+    ) -> list[SoundEvent]:
         ...

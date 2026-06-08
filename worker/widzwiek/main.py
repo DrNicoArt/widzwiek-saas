@@ -19,11 +19,12 @@ from .config import settings
 from .contracts import CaptionDocument, Job
 from .export import to_srt, to_txt, to_vtt
 from .jobs import store
+from .pipeline.orchestrator import registry_snapshot
 from .pipeline.providers import select_providers
 
 app = FastAPI(
     title="Widźwięk Worker",
-    description="Pipeline AI + walidacja WCAG + eksport SRT/VTT. Tryb mock (demo) / api.",
+    description="No-API-first orchestrator + WCAG captions pipeline + eksport SRT/VTT.",
     version="0.4.0",
 )
 
@@ -47,6 +48,7 @@ def _health_dict() -> dict:
         "ffmpeg_present": r["ffmpeg_present"],
         "transcription_model": settings.openai_transcription_model,
         "providers": {"asr": p.asr.name, "diarization": p.diarization.name, "sound_events": p.sound_events.name},
+        "capabilities": registry_snapshot(),
         "notes": r["notes"],
     }
 
@@ -72,8 +74,8 @@ def update_config(cfg: ConfigUpdate) -> dict:
     """
     if cfg.pipeline_mode is not None:
         m = cfg.pipeline_mode.strip().lower()
-        if m not in ("mock", "api"):
-            raise HTTPException(status_code=400, detail="PIPELINE_MODE musi być 'mock' albo 'api'.")
+        if m not in ("auto", "local", "free", "mock", "api"):
+            raise HTTPException(status_code=400, detail="PIPELINE_MODE musi być auto/local/free/mock/api.")
         settings.pipeline_mode = m
     if cfg.openai_api_key is not None:
         settings.openai_api_key = cfg.openai_api_key.strip()
@@ -87,6 +89,10 @@ class ImportRequest(BaseModel):
     document: CaptionDocument
 
 
+class URLJobRequest(BaseModel):
+    url: str
+
+
 @app.post("/api/jobs/import", response_model=Job)
 def import_job(req: ImportRequest) -> Job:
     """Import gotowych napisow (SRT/VTT sparsowane na froncie) jako trwaly job.
@@ -95,6 +101,21 @@ def import_job(req: ImportRequest) -> Job:
         raise HTTPException(status_code=413, detail="Limit magazynu przekroczony. Usun materialy, aby dodac nowe.")
     job = store.create(filename=req.filename)
     return store.update_document(job, req.document)
+
+
+@app.post("/api/jobs/url", response_model=Job)
+def create_url_job(req: URLJobRequest) -> Job:
+    """URL -> istniejące napisy/auto-captiony przez no-key źródła.
+
+    Nie pobiera wideo/audio. Jeśli platforma nie udostępnia napisów, job kończy się
+    czytelnym błędem i użytkownik może użyć uploadu pliku.
+    """
+    if store.storage_usage()["over_limit"]:
+        raise HTTPException(status_code=413, detail="Limit magazynu przekroczony. Usun materialy, aby dodac nowe.")
+    if not req.url.strip().lower().startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="Podaj poprawny URL http(s).")
+    job = store.create(filename=req.url.strip())
+    return store.process_url(job, req.url.strip())
 
 
 @app.post("/api/jobs", response_model=Job)

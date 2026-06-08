@@ -18,7 +18,12 @@ class MockDiarizationProvider(DiarizationProvider):
     name = "mock"
 
     def diarize(self, audio_path: Optional[str], segments: list[SpeechSegment]) -> DiarizationResult:
-        return mock_data.mock_diarize(segments)
+        result = mock_data.mock_diarize(segments)
+        result.segments = [
+            SpeechSegment(s.start_ms, s.end_ms, s.text, s.speaker_id, confidence=s.confidence or 0.86, source=s.source or self.name)
+            for s in result.segments
+        ]
+        return result
 
 
 class SingleSpeakerDiarizationProvider(DiarizationProvider):
@@ -29,8 +34,39 @@ class SingleSpeakerDiarizationProvider(DiarizationProvider):
 
     def diarize(self, audio_path: Optional[str], segments: list[SpeechSegment]) -> DiarizationResult:
         speaker = Speaker(id="S1", label="Mówca", color="white")
-        out = [SpeechSegment(s.start_ms, s.end_ms, s.text, speaker.id) for s in segments]
+        out = [SpeechSegment(s.start_ms, s.end_ms, s.text, speaker.id, s.confidence, s.source) for s in segments]
         return DiarizationResult(segments=out, speakers=[speaker] if out else [])
+
+
+class HeuristicTurnDiarizationProvider(DiarizationProvider):
+    """No-key MVP: segmentacja tur rozmowy na podstawie pauz i znaków dialogu.
+
+    Nie udaje biometrycznej identyfikacji mówcy. Daje jednak czytelne speaker turns
+    i realnie wpływa na captions/WCAG bez płatnego API.
+    """
+    name = "heuristic-turns"
+
+    def diarize(self, audio_path: Optional[str], segments: list[SpeechSegment]) -> DiarizationResult:
+        if not segments:
+            return DiarizationResult(segments=[], speakers=[])
+        speakers = [
+            Speaker(id="S1", label="Mówca 1", color="white"),
+            Speaker(id="S2", label="Mówca 2", color="yellow"),
+        ]
+        current = 0
+        out: list[SpeechSegment] = []
+        prev_end = None
+        for seg in segments:
+            text = seg.text.strip()
+            gap = 0 if prev_end is None else max(0, seg.start_ms - prev_end)
+            dialogue_marker = text.startswith(("-", "–", "—")) or text.endswith("?")
+            if out and (gap >= 1200 or dialogue_marker):
+                current = 1 - current
+            speaker_id = speakers[current].id
+            out.append(SpeechSegment(seg.start_ms, seg.end_ms, text.lstrip("-–— ").strip(), speaker_id, seg.confidence, seg.source))
+            prev_end = seg.end_ms
+        used_ids = {s.speaker_id for s in out}
+        return DiarizationResult(segments=out, speakers=[s for s in speakers if s.id in used_ids])
 
 
 class PyannoteDiarizationProvider(DiarizationProvider):
@@ -46,6 +82,8 @@ class PyannoteDiarizationProvider(DiarizationProvider):
 
 
 def get_diarization_provider(name: str) -> DiarizationProvider:
+    if name in ("heuristic", "heuristic-turns", "turns"):
+        return HeuristicTurnDiarizationProvider()
     if name == "pyannote":
         return PyannoteDiarizationProvider()
     if name in ("single-speaker", "single-speaker-tbd"):

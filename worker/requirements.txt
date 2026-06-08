@@ -8,10 +8,15 @@ python-multipart>=0.0.9        # obsługa upload (multipart/form-data)
 pytest>=8.0,<9.0
 httpx>=0.27,<1.0               # TestClient FastAPI
 
+# === MVP no-API-first (bez kluczy, darmowe/open-source) ===
+faster-whisper>=1.1,<2.0       # lokalny ASR (CTranslate2/Whisper), bez płatnego API
+yt-dlp>=2025.1.1               # pobieranie istniejących napisów/auto-captionów, bez pobierania wideo
+
 # === Placeholdery integracji zewnętrznych (odkomentuj przy włączaniu danego trybu) ===
 # PIPELINE_MODE=api — transkrypcja przez OpenAI (import leniwy; brak pakietu => czytelny błąd):
 # openai>=1.0
 # Wideo w trybie api: ekstrakcja audio przez ffmpeg (zainstaluj w systemie, dodaj do PATH).
-# Diaryzacja (TBD): pyannote.audio>=3.1 (wymaga tokenu Hugging Face).
-# Modele self-hosted/lokalne: tylko later/dev eksperyment infrastrukturalny, nie strategia produktu.
-# faster-whisper>=1.0
+# Opcjonalne lokalne modele jakości:
+# inaSpeechSegmenter>=0.7       # speech/music/noise segmentation; cięższe zależności
+# pyannote.audio>=3.1           # diarizacja; część modeli wymaga akceptacji/licencji/tokenu HF
+# speechbrain>=1.0              # speaker/audio toolkit; do oceny jako provider lokalny

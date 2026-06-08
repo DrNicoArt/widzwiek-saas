@@ -14,10 +14,11 @@ from widzwiek.pipeline.asr import MockASRProvider, OpenAIASRProvider, map_transc
 from widzwiek.pipeline.audio import ensure_audio
 from widzwiek.pipeline.diarization import (
     MockDiarizationProvider,
+    HeuristicTurnDiarizationProvider,
     SingleSpeakerDiarizationProvider,
 )
 from widzwiek.pipeline.providers import select_providers
-from widzwiek.pipeline.sound_events import MockSoundEventProvider, NoopSoundEventProvider
+from widzwiek.pipeline.sound_events import MockSoundEventProvider, NoopSoundEventProvider, OpenAudioSoundEventProvider
 from widzwiek.wcag import validate
 
 
@@ -47,8 +48,8 @@ def test_mode_mock_selects_mock_providers():
 def test_mode_api_selects_api_providers():
     p = select_providers(_settings(pipeline_mode="api", openai_api_key="sk-test"))
     assert isinstance(p.asr, OpenAIASRProvider)
-    assert isinstance(p.diarization, SingleSpeakerDiarizationProvider)  # TBD
-    assert isinstance(p.sound_events, NoopSoundEventProvider)           # TBD
+    assert isinstance(p.diarization, HeuristicTurnDiarizationProvider)
+    assert isinstance(p.sound_events, OpenAudioSoundEventProvider)
 
 
 def test_invalid_mode_raises():
