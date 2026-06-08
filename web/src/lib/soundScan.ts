@@ -25,6 +25,14 @@ export async function analyzeSounds(file: File, speech: { start_ms: number; end_
       for (let i = i0; i < i1; i += step) { s += ch[i] * ch[i]; n++; }
       return Math.sqrt(s / Math.max(1, n));
     };
+    const zcr = (aMs: number, bMs: number) => {
+      const i0 = Math.max(1, Math.floor((aMs / 1000) * sr));
+      const i1 = Math.min(ch.length, Math.floor((bMs / 1000) * sr));
+      if (i1 <= i0) return 0;
+      let cross = 0, n = 0; const step = Math.max(1, Math.floor((i1 - i0) / 4000));
+      for (let i = i0; i < i1; i += step) { if ((ch[i] < 0) !== (ch[i - 1] < 0)) cross++; n++; }
+      return cross / Math.max(1, n);
+    };
     const sorted = [...speech].sort((a, b) => a.start_ms - b.start_ms);
     const gaps: [number, number][] = [];
     let prev = 0;
@@ -33,11 +41,12 @@ export async function analyzeSounds(file: File, speech: { start_ms: number; end_
     const out: Cue[] = [];
     let idx = 0;
     for (const [a, b] of gaps) {
-      if (rms(a, b) > 0.02) {
-        const dur = b - a;
-        const label = dur >= 3000 ? "[muzyka w tle]" : "[dźwięki w tle]";
-        out.push({ id: `snd${++idx}`, index: 0, start_ms: Math.round(a), end_ms: Math.round(b), kind: "sound", speaker_id: null, lines: [label], text: label });
-      }
+      const r = rms(a, b);
+      if (r <= 0.02) continue; // cisza/pauza — nie oznaczamy
+      const z = zcr(a, b);
+      const dur = b - a;
+      const label = z > 0.18 ? "[oklaski]" : dur >= 3000 && z < 0.12 ? "[muzyka w tle]" : "[dźwięki w tle]";
+      out.push({ id: `snd${++idx}`, index: 0, start_ms: Math.round(a), end_ms: Math.round(b), kind: "sound", speaker_id: null, lines: [label], text: label });
     }
     return out;
   } catch {

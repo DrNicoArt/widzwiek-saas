@@ -57,3 +57,27 @@ export function autoSpeakers(doc: CaptionDocument): CaptionDocument {
   if (!speakers.length) return doc;
   return { ...doc, speakers, cues };
 }
+
+
+// Heurystyczne tury mówców dla transkrypcji bez diaryzacji (brak API): długie pauzy = zmiana mówcy.
+// Konserwatywnie: zakładamy 2 mówców tylko gdy są wyraźne, powtarzalne zmiany — inaczej nie zmyślamy.
+export function heuristicTurns(doc: CaptionDocument): CaptionDocument {
+  if (doc.speakers.length) return doc;
+  const GAP = 2000;
+  const speech = doc.cues.filter((c) => c.kind === "speech");
+  if (speech.length < 4) return doc;
+  let cur = 0, turns = 0, prevEnd = -Infinity;
+  const map = new Map<string, number>();
+  for (const c of speech) {
+    if (prevEnd !== -Infinity && c.start_ms - prevEnd >= GAP) { cur ^= 1; turns++; }
+    map.set(c.id, cur);
+    prevEnd = c.end_ms;
+  }
+  if (turns < 2) return doc; // za mało zmian -> jeden mówca
+  const speakers: Speaker[] = [
+    { id: "S1", label: "Mówca 1", color: PALETTE[0] },
+    { id: "S2", label: "Mówca 2", color: PALETTE[1] },
+  ];
+  const cues = doc.cues.map((c) => (c.kind === "speech" ? { ...c, speaker_id: map.get(c.id) === 1 ? "S2" : "S1" } : c));
+  return { ...doc, speakers, cues };
+}
