@@ -4,6 +4,7 @@
 // CaptionDocument -> klientowy silnik WCAG. Klucz nie opuszcza urządzenia poza wywołaniem do dostawcy.
 import type { CaptionDocument, Cue } from "./contract";
 import { finalizeDoc } from "./wcagClient";
+import { analyzeSounds } from "./soundScan";
 
 export type AsrProvider = "openai" | "elevenlabs" | "deepgram";
 export interface AsrChoice { provider: AsrProvider; key: string }
@@ -95,17 +96,25 @@ export async function transcribeWithProvider(file: File, choice: AsrChoice): Pro
     if (e instanceof TypeError) throw new Error("Nie udało się połączyć z dostawcą (sieć lub CORS). Sprawdź klucz i spróbuj ponownie.");
     throw e;
   }
-  const cues: Cue[] = segs.map((s, i): Cue => {
+  let cues: Cue[] = segs.map((s, i): Cue => {
     let end = s.end; if (end <= s.start) end = s.start + 1200;
     return { id: `c${i + 1}`, index: i + 1, start_ms: s.start, end_ms: end, kind: "speech", speaker_id: null, lines: wrap(s.text), text: s.text };
   });
+  let soundProvider = "none";
+  try {
+    const sounds = await analyzeSounds(file, cues.map((c) => ({ start_ms: c.start_ms, end_ms: c.end_ms })));
+    if (sounds.length) {
+      cues = [...cues, ...sounds].sort((a, b) => a.start_ms - b.start_ms).map((c, i) => ({ ...c, index: i + 1 }));
+      soundProvider = "heuristic-audio";
+    }
+  } catch { /* best-effort */ }
   const duration = cues.length ? Math.max(...cues.map((c) => c.end_ms)) : 0;
   const doc: CaptionDocument = {
     schema_version: "1.0",
     media: { filename: file.name, source_kind: file.type.startsWith("video") ? "video" : "audio", duration_ms: duration, language: "pl" },
     speakers: [], cues,
     wcag: { target: "WCAG 2.1 AA", compliant: false, generated_at: new Date().toISOString(), stats: { cue_count: cues.length, error_count: 0, warning_count: 0 }, issues: [] },
-    meta: { generated_at: new Date().toISOString(), pipeline: { asr: choice.provider, diarization: "none", sound_events: "none" }, decision: { strategy: "automatic", transcript_source: "cloud-asr", no_api_first: false, fallback_used: false, fallbacks: [], notes: [`Transkrypcja w przeglądarce (${choice.provider}), klucz użytkownika.`] } },
+    meta: { generated_at: new Date().toISOString(), pipeline: { asr: choice.provider, diarization: "none", sound_events: soundProvider }, decision: { strategy: "automatic", transcript_source: "cloud-asr", no_api_first: false, fallback_used: false, fallbacks: [], notes: [`Transkrypcja w przeglądarce (${choice.provider}), klucz użytkownika.`] } },
   };
   return finalizeDoc(doc);
 }

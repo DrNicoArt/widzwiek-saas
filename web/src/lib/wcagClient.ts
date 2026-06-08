@@ -24,6 +24,15 @@ function isShouting(line: string): boolean {
 
 const charCount = (c: Cue) => c.lines.reduce((n, l) => n + l.length, 0);
 
+function wrapLines(text: string, max: number, maxLines: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (!words.length) return [text];
+  const lines: string[] = []; let cur = "";
+  for (const w of words) { if (!cur) cur = w; else if (cur.length + 1 + w.length <= max) cur += " " + w; else { lines.push(cur); cur = w; } }
+  if (cur) lines.push(cur);
+  return lines.length <= maxLines ? lines : [...lines.slice(0, maxLines - 1), lines.slice(maxLines - 1).join(" ")];
+}
+
 export interface QualityScores {
   transcription: number; diarization: number; sound_events: number;
   segmentation: number; wcag: number; completeness: number; overall: number;
@@ -123,6 +132,9 @@ export function scoreQuality(doc: CaptionDocument, report: WcagReport): QualityS
 
 // Zwraca dokument z policzonym raportem WCAG i meta.quality (zachowuje meta.decision, jeśli jest).
 export function finalizeDoc(doc: CaptionDocument): CaptionDocument {
+  const maxChars = doc.style?.max_chars_per_line ?? 42;
+  const maxLines = doc.style?.max_lines ?? 2;
+  doc = { ...doc, cues: doc.cues.map((c) => c.kind === "speech" ? { ...c, lines: wrapLines(c.text, maxChars, maxLines) } : { ...c, lines: [c.text] }) };
   const wcag = validateWcag(doc);
   const quality = scoreQuality(doc, wcag);
   return { ...doc, wcag, meta: { ...doc.meta, quality } };

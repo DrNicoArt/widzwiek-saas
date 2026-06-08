@@ -2,6 +2,7 @@
 // Wykrywa mowcow z <v Nazwa>, opisy dzwiekow [..] jako cue typu sound, zachowuje timing.
 import type { CaptionDocument, Cue, Speaker } from "./contract";
 import { DEFAULT_STYLE } from "./contract";
+import { autoSpeakers } from "./enrich";
 
 const PALETTE = ["#f5f5f5", "#ffd400", "#22d3ee", "#4ade80", "#ff8a5b", "#c084fc", "#60a5fa", "#ff5d6c"];
 
@@ -68,7 +69,7 @@ export function parseSubtitles(content: string, filename: string): CaptionDocume
   }
 
   const duration = cues.reduce((mx, c) => Math.max(mx, c.end_ms), 0);
-  return {
+  const built: CaptionDocument = {
     schema_version: "1.0",
     media: { filename, source_kind: "audio", duration_ms: duration, language: "pl" },
     speakers,
@@ -77,4 +78,5 @@ export function parseSubtitles(content: string, filename: string): CaptionDocume
     style: { ...DEFAULT_STYLE },
     meta: { generated_at: new Date().toISOString(), pipeline: { asr: "import", diarization: "import", sound_events: "import" } },
   };
+  return autoSpeakers(built);
 }
