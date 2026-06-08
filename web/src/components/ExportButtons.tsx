@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { CaptionDocument } from "@/lib/contract";
-import { toSrt, toVtt, downloadText } from "@/lib/exportClient";
+import { toSrt, toVtt, toTxt, downloadText } from "@/lib/exportClient";
 import Icon from "@/components/ui/Icon";
 import { fadeUp, stagger, inView, cardHover } from "@/lib/motion";
 
@@ -14,6 +14,7 @@ export default function ExportButtons({ doc }: { doc: CaptionDocument }) {
   const FORMATS = [
     { fmt: "srt", title: "Pobierz SRT", desc: "Najszersza kompatybilność — YouTube, Vimeo, VLC, większość odtwarzaczy i LMS. Sam tekst z timingiem.", make: () => toSrt(doc), mime: "application/x-subrip" },
     { fmt: "vtt", title: "Pobierz VTT", desc: "Lepszy dla webu i dostępności (HTML5 <track>) — pozwala na kolory mówców, pozycjonowanie i rozdziały.", make: () => toVtt(doc), mime: "text/vtt" },
+    { fmt: "txt", title: "Pobierz TXT", desc: "Czysty transkrypt z mówcami — do copy/paste, e-maila i dokumentów.", make: () => toTxt(doc), mime: "text/plain" },
   ] as const;
 
   return (

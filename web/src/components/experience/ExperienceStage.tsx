@@ -136,7 +136,7 @@ export default function ExperienceStage() {
               className="focusring inline-flex items-center gap-2 rounded-full bg-brand-600 px-7 py-3.5 text-sm font-medium text-white shadow-lift transition-colors hover:bg-brand-700">
               <Icon name="play" size={18} /> Otwórz demo
             </motion.button>
-            <p className="text-xs text-muted">Demo działa w trybie mock — bez kluczy API.</p>
+            <p className="text-xs text-muted">Działa bez żadnego API. Z własnym kluczem (OpenAI / ElevenLabs / Deepgram) transkrybuje też Twoje pliki audio i wideo.</p>
           </motion.div>
         </main>
 

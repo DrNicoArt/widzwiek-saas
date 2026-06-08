@@ -29,7 +29,7 @@ export function toSrt(doc: CaptionDocument): string {
 export function toVtt(doc: CaptionDocument): string {
   const byId = Object.fromEntries(doc.speakers.map((s) => [s.id, s]));
   const style = doc.speakers.length
-    ? "STYLE\n" + doc.speakers.map((s) => `::cue(v[voice="${s.label}"]) { color: ${COLOR_CSS[s.color] ?? "#fff"}; }`).join("\n") + "\n\n"
+    ? "STYLE\n" + doc.speakers.map((s) => `::cue(v[voice="${s.label}"]) { color: ${COLOR_CSS[s.color] ?? (s.color.startsWith("#") ? s.color : "#fff")}; }`).join("\n") + "\n\n"
     : "";
   const blocks = doc.cues.map((c) => {
     let text = c.lines.join("\n");
@@ -40,6 +40,17 @@ export function toVtt(doc: CaptionDocument): string {
     return `${c.index}\n${ts(c.start_ms, ".")} --> ${ts(c.end_ms, ".")}\n${text}`;
   });
   return "WEBVTT\n\n" + style + blocks.join("\n\n") + "\n";
+}
+
+export function toTxt(doc: CaptionDocument): string {
+  const byId = Object.fromEntries(doc.speakers.map((s) => [s.id, s]));
+  return doc.cues.map((c) => {
+    if (c.kind === "speech") {
+      const sp = c.speaker_id ? byId[c.speaker_id] : undefined;
+      return (sp ? `${sp.label}: ` : "") + c.text;
+    }
+    return c.text;
+  }).join("\n") + "\n";
 }
 
 export function downloadText(filename: string, content: string, mime: string) {
