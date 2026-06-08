@@ -12,6 +12,7 @@ import { DEMO_DOC } from "@/lib/demoDoc";
 import { probeAudioPresence } from "@/lib/audioProbe";
 import { parseSubtitles } from "@/lib/importSubs";
 import { transcribeWithProvider } from "@/lib/cloudAsr";
+import { transcribeLocally, type LocalProgress } from "@/lib/localAsr";
 import { getUserAsr } from "@/lib/userKey";
 import { DEFAULT_PROCESSING_DECISION } from "@/lib/orchestration";
 import { useWorkerUp } from "@/components/shell/AppShell";
@@ -80,6 +81,7 @@ function StudioInner() {
   const [error, setError] = useState<string | null>(null);
   const [audioWarn, setAudioWarn] = useState<string | null>(null);
   const [hasKey, setHasKey] = useState(false);
+  const [localProg, setLocalProg] = useState<LocalProgress | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
   const pick = () => inputRef.current?.click();
@@ -130,6 +132,19 @@ function StudioInner() {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Transkrypcja nie powiodła się."); setPhase("error");
     }
+  }
+
+  async function runLocal(f: File) {
+    setError(null); setSample(false); setPhase("processing"); setLocalProg({ pct: 0, label: "Start…" });
+    try {
+      const doc = await transcribeLocally(f, (p) => setLocalProg(p));
+      if (!doc.cues.length) throw new Error("Nie rozpoznano mowy w pliku.");
+      const created = await importJob(f.name, doc);
+      router.push(`/app/projekty/${created.id}/napisy`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Transkrypcja w przeglądarce nie powiodła się.");
+      setPhase("error");
+    } finally { setLocalProg(null); }
   }
 
   async function handleRun() {
@@ -234,6 +249,7 @@ function StudioInner() {
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || (workerUp === false && !IS_STATIC_DEMO && !hasKey)} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
+              <Button variant="secondary" onClick={() => file && runLocal(file)} disabled={!file || busy} icon="sparkles" title="Transkrypcja Whisper w Twojej przeglądarce — bez API, bez wysyłania pliku na serwer. Pierwszy raz pobiera model (~150 MB).">Transkrybuj bez API (w przeglądarce)</Button>
               {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> albo uruchom worker w środowisku dev.</span>}
               {hasKey ? (
                 <span className="inline-flex items-center gap-1.5 text-xs text-ok"><Icon name="checkCircle" size={14} /> Klucz dostawcy wykryty — plik zostanie przetranskrybowany w Twojej przeglądarce.</span>
@@ -241,6 +257,18 @@ function StudioInner() {
                 <span className="text-xs text-muted">Masz własny klucz (OpenAI / ElevenLabs / Deepgram)? <Link href="/app/ustawienia" className="font-medium text-brand-700 underline">Dodaj go w Ustawieniach</Link>, aby transkrybować własne pliki.</span>
               )}
             </div>
+            {localProg && (
+              <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-brand-700">{localProg.label}</span>
+                  <span className="tabular-nums text-muted">{localProg.pct}%</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
+                  <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${localProg.pct}%` }} />
+                </div>
+                <p className="mt-2 text-[11px] text-muted">Działa lokalnie w przeglądarce — plik nie opuszcza Twojego urządzenia. Dłuższe materiały mogą zająć kilka minut.</p>
+              </div>
+            )}
           </motion.div>
         </Section>
 
