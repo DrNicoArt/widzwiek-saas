@@ -11,6 +11,7 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/app", label: "Przegląd", icon: "grid" },
   { href: "/app/studio", label: "Nowy materiał", icon: "upload" },
   { href: "/app/projekty", label: "Projekty", icon: "folder" },
+  { href: "/app/audyt", label: "Audyt biblioteki", icon: "shield" },
   { href: "/app/plan", label: "Plan i płatności", icon: "card" },
   { href: "/app/ustawienia", label: "Ustawienia", icon: "settings" },
 ];
