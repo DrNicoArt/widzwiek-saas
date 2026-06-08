@@ -11,6 +11,8 @@ import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
 import { DEMO_DOC } from "@/lib/demoDoc";
 import { probeAudioPresence } from "@/lib/audioProbe";
 import { parseSubtitles } from "@/lib/importSubs";
+import { transcribeWithProvider } from "@/lib/cloudAsr";
+import { getUserAsr } from "@/lib/userKey";
 import { DEFAULT_PROCESSING_DECISION } from "@/lib/orchestration";
 import { useWorkerUp } from "@/components/shell/AppShell";
 import PageHeader from "@/components/shell/PageHeader";
@@ -77,6 +79,7 @@ function StudioInner() {
   const [sample, setSample] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioWarn, setAudioWarn] = useState<string | null>(null);
+  const [hasKey, setHasKey] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
   const pick = () => inputRef.current?.click();
@@ -114,7 +117,20 @@ function StudioInner() {
 
   // wejście z ?sample=1 (np. z banera offline / dashboardu)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (params.get("sample") === "1") runSample(); }, []);
+  useEffect(() => { setHasKey(!!getUserAsr()); if (params.get("sample") === "1") runSample(); }, []);
+
+  async function runCloud(f: File) {
+    setError(null); setSample(false); setPhase("processing");
+    try {
+      const asr = getUserAsr(); if (!asr) return;
+      const doc = await transcribeWithProvider(f, asr);
+      if (!doc.cues.length) throw new Error("Dostawca nie zwrócił transkrypcji (brak mowy w pliku?).");
+      const created = await importJob(f.name, doc);
+      router.push(`/app/projekty/${created.id}/napisy`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Transkrypcja nie powiodła się."); setPhase("error");
+    }
+  }
 
   async function handleRun() {
     if (!file && sourceUrl.trim()) {
@@ -122,6 +138,8 @@ function StudioInner() {
       return;
     }
     if (!file) return;
+    // Klucz usera -> realna transkrypcja w przeglądarce (działa też na statycznym demo).
+    if (getUserAsr()) { await runCloud(file); return; }
     if (IS_STATIC_DEMO) {
       runSample();
       return;
@@ -215,8 +233,13 @@ function StudioInner() {
             )}
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || workerUp === false} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
+              <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || (workerUp === false && !IS_STATIC_DEMO && !hasKey)} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
               {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> albo uruchom worker w środowisku dev.</span>}
+              {hasKey ? (
+                <span className="inline-flex items-center gap-1.5 text-xs text-ok"><Icon name="checkCircle" size={14} /> Klucz dostawcy wykryty — plik zostanie przetranskrybowany w Twojej przeglądarce.</span>
+              ) : (
+                <span className="text-xs text-muted">Masz własny klucz (OpenAI / ElevenLabs / Deepgram)? <Link href="/app/ustawienia" className="font-medium text-brand-700 underline">Dodaj go w Ustawieniach</Link>, aby transkrybować własne pliki.</span>
+              )}
             </div>
           </motion.div>
         </Section>
