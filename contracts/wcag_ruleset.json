@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "target": "WCAG 2.1 AA",
+  "standard_refs": ["WCAG 2.1 AA", "EN 301 549"],
+  "thresholds": {
+    "max_chars_per_line": 42,
+    "recommended_chars_per_line": 37,
+    "max_lines": 2,
+    "min_duration_ms": 1000,
+    "max_duration_ms": 7000,
+    "min_gap_ms": 1500,
+    "max_chars_per_second": 21.0
+  },
+  "allowed_caps_tokens": ["BLEEP"],
+  "_note": "Jedno zrodlo prawdy progow WCAG. Worker (Python) laduje ten plik; klient (TS) lustruje go w web/src/lib/wcagRuleset.ts ze stempelem wersji. Test worker/tests/test_ruleset.py pilnuje zgodnosci Python<->JSON."
+}

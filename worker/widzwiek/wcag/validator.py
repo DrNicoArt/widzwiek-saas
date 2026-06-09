@@ -127,6 +127,7 @@ def validate(doc: CaptionDocument) -> WcagReport:
 
     return WcagReport(
         target=rules.TARGET,
+        ruleset_version=rules.RULESET_VERSION,
         compliant=(errors == 0),
         stats=WcagStats(cue_count=len(cues), error_count=errors, warning_count=warnings),
         issues=issues,

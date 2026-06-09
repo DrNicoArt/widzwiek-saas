@@ -101,6 +101,7 @@ class WcagStats(BaseModel):
 
 class WcagReport(BaseModel):
     target: str = "WCAG 2.1 AA"
+    ruleset_version: str = ""        # wersja zestawu regul (contracts/wcag_ruleset.json)
     compliant: bool = False          # KLUCZOWA wartość produktu: TAK/NIE
     generated_at: str = Field(default_factory=_now_iso)
     stats: WcagStats = Field(default_factory=WcagStats)

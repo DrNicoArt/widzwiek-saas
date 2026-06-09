@@ -1,17 +1,14 @@
-// Klientowa walidacja WCAG + ocena jakości — wierne lustro worker/widzwiek/wcag/validator.py
+// KLIENTOWA walstwa PODGLĄDU/OFFLINE (nie autorytet) — lustro worker/widzwiek/wcag/validator.py.
+// Autorytetem WCAG jest worker. Tu liczymy raport dla statycznego demo i szybkiego podglądu.
+// Progi pochodzą z ./wcagRuleset.ts (lustro contracts/wcag_ruleset.json). Patrz docs/PLATFORM_AUDIT.md.
 // i orchestrator.apply_quality. Dzięki temu statyczne demo (Vercel, bez workera/API) realnie
 // liczy raport WCAG i Quality Score dla dowolnych napisów (import, edycja, sample).
 import type { CaptionDocument, Cue, WcagIssue, WcagReport } from "./contract";
-
-const MAX_CHARS_PER_LINE = 42;
-const RECOMMENDED_CHARS_PER_LINE = 37;
-const MAX_LINES = 2;
-const MIN_DURATION_MS = 1000;
-const MAX_DURATION_MS = 7000;
-const MIN_GAP_MS = 1500;
-const MAX_CPS = 21;
-const ALLOWED_CAPS = ["BLEEP"];
-const TARGET = "WCAG 2.1 AA";
+import {
+  RULESET_VERSION, WCAG_TARGET as TARGET,
+  MAX_CHARS_PER_LINE, RECOMMENDED_CHARS_PER_LINE, MAX_LINES,
+  MIN_DURATION_MS, MAX_DURATION_MS, MIN_GAP_MS, MAX_CPS, ALLOWED_CAPS,
+} from "./wcagRuleset";
 
 function isShouting(line: string): boolean {
   let s = line.replace(/\[[^\]]*\]/g, "");
@@ -90,7 +87,7 @@ export function validateWcag(doc: CaptionDocument): WcagReport {
   const error_count = issues.filter((i) => i.severity === "error").length;
   const warning_count = issues.filter((i) => i.severity === "warning").length;
   return {
-    target: TARGET, compliant: error_count === 0, generated_at: new Date().toISOString(),
+    target: TARGET, ruleset_version: RULESET_VERSION, compliant: error_count === 0, generated_at: new Date().toISOString(),
     stats: { cue_count: cues.length, error_count, warning_count }, issues,
   };
 }

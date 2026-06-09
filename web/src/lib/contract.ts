@@ -43,6 +43,7 @@ export interface WcagIssue {
 
 export interface WcagReport {
   target: string;
+  ruleset_version?: string;
   compliant: boolean;
   generated_at: string;
   stats: { cue_count: number; error_count: number; warning_count: number };
