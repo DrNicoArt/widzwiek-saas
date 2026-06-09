@@ -1,0 +1,178 @@
+{
+  "id": "5ba3f213b5e4",
+  "status": "done",
+  "created_at": "2026-06-09T08:46:57.675796+00:00",
+  "updated_at": "2026-06-09T08:46:57.676048+00:00",
+  "filename": "nagranie.mp3",
+  "error": null,
+  "result": {
+    "schema_version": "1.0",
+    "media": {
+      "filename": "nagranie.mp3",
+      "source_kind": "audio",
+      "duration_ms": 30000,
+      "language": "pl"
+    },
+    "speakers": [
+      {
+        "id": "S1",
+        "label": "Lektor",
+        "color": "white"
+      },
+      {
+        "id": "S2",
+        "label": "Ekspertka",
+        "color": "yellow"
+      }
+    ],
+    "cues": [
+      {
+        "id": "c1",
+        "index": 1,
+        "start_ms": 0,
+        "end_ms": 2000,
+        "kind": "sound",
+        "speaker_id": null,
+        "lines": [
+          "[muzyka spokojna w tle]"
+        ],
+        "text": "[muzyka spokojna w tle]",
+        "tokens": null
+      },
+      {
+        "id": "c2",
+        "index": 2,
+        "start_ms": 3500,
+        "end_ms": 7500,
+        "kind": "speech",
+        "speaker_id": "S1",
+        "lines": [
+          "Dzień dobry, witam w naszym kursie online."
+        ],
+        "text": "Dzień dobry, witam w naszym kursie online.",
+        "tokens": null
+      },
+      {
+        "id": "c3",
+        "index": 3,
+        "start_ms": 9000,
+        "end_ms": 13000,
+        "kind": "speech",
+        "speaker_id": "S1",
+        "lines": [
+          "Dziś wyjaśnimy, czym są",
+          "napisy zgodne z WCAG."
+        ],
+        "text": "Dziś wyjaśnimy, czym są napisy zgodne z WCAG.",
+        "tokens": null
+      },
+      {
+        "id": "c4",
+        "index": 4,
+        "start_ms": 14500,
+        "end_ms": 16000,
+        "kind": "sound",
+        "speaker_id": null,
+        "lines": [
+          "[oklaski]"
+        ],
+        "text": "[oklaski]",
+        "tokens": null
+      },
+      {
+        "id": "c5",
+        "index": 5,
+        "start_ms": 17500,
+        "end_ms": 19000,
+        "kind": "sound",
+        "speaker_id": null,
+        "lines": [
+          "[pukanie do drzwi]"
+        ],
+        "text": "[pukanie do drzwi]",
+        "tokens": null
+      },
+      {
+        "id": "c6",
+        "index": 6,
+        "start_ms": 20500,
+        "end_ms": 24500,
+        "kind": "speech",
+        "speaker_id": "S2",
+        "lines": [
+          "Napisy to nie tylko tekst. To",
+          "też opis dźwięków otoczenia."
+        ],
+        "text": "Napisy to nie tylko tekst. To też opis dźwięków otoczenia.",
+        "tokens": null
+      },
+      {
+        "id": "c7",
+        "index": 7,
+        "start_ms": 26000,
+        "end_ms": 29500,
+        "kind": "speech",
+        "speaker_id": "S2",
+        "lines": [
+          "Dzięki temu materiał jest",
+          "dostępny dla każdego widza."
+        ],
+        "text": "Dzięki temu materiał jest dostępny dla każdego widza.",
+        "tokens": null
+      }
+    ],
+    "wcag": {
+      "target": "WCAG 2.1 AA",
+      "ruleset_version": "1.0.0",
+      "compliant": true,
+      "generated_at": "2026-06-09T08:46:57.675993+00:00",
+      "stats": {
+        "cue_count": 7,
+        "error_count": 0,
+        "warning_count": 1
+      },
+      "issues": [
+        {
+          "code": "LINE_TOO_LONG",
+          "severity": "warning",
+          "message": "Linia ma 42 znaków — zalecane <= 37: \"Dzień dobry, witam w naszym kursie online.\"",
+          "cue_id": "c2",
+          "field": "lines"
+        }
+      ]
+    },
+    "style": {
+      "font_family": "system",
+      "font_size": 20,
+      "position": "bottom",
+      "background": true,
+      "max_chars_per_line": 42,
+      "max_lines": 2
+    },
+    "meta": {
+      "generated_at": "2026-06-09T08:46:57.675937+00:00",
+      "pipeline": {
+        "asr": "mock",
+        "diarization": "mock",
+        "sound_events": "mock"
+      },
+      "decision": {
+        "strategy": "automatic",
+        "transcript_source": "mock",
+        "no_api_first": true,
+        "fallback_used": false,
+        "fallbacks": [],
+        "notes": []
+      },
+      "quality": {
+        "transcription": 0.86,
+        "diarization": 0.62,
+        "sound_events": 0.86,
+        "segmentation": 1.0,
+        "wcag": 0.94,
+        "completeness": 0.968,
+        "overall": 0.875
+      }
+    }
+  }
+}

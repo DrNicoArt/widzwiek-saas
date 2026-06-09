@@ -1,0 +1,214 @@
+{
+  "id": "e1fcca0da20b",
+  "status": "done",
+  "created_at": "2026-06-09T08:46:57.661901+00:00",
+  "updated_at": "2026-06-09T08:46:57.667410+00:00",
+  "filename": "nagranie.mp3",
+  "error": null,
+  "result": {
+    "schema_version": "1.0",
+    "media": {
+      "filename": "nagranie.mp3",
+      "source_kind": "audio",
+      "duration_ms": 29500,
+      "language": "pl"
+    },
+    "speakers": [
+      {
+        "id": "S1",
+        "label": "Lektor",
+        "color": "white"
+      },
+      {
+        "id": "S2",
+        "label": "Ekspertka",
+        "color": "yellow"
+      }
+    ],
+    "cues": [
+      {
+        "id": "c2",
+        "index": 1,
+        "start_ms": 3500,
+        "end_ms": 7500,
+        "kind": "speech",
+        "speaker_id": "S1",
+        "lines": [
+          "To jest bardzo dluga wypowiedz ktora",
+          "znacznie przekracza limit jednej linii napisow WCAG"
+        ],
+        "text": "To jest bardzo dluga wypowiedz ktora znacznie przekracza limit jednej linii napisow WCAG",
+        "tokens": null
+      },
+      {
+        "id": "c3",
+        "index": 2,
+        "start_ms": 9000,
+        "end_ms": 13000,
+        "kind": "speech",
+        "speaker_id": "S1",
+        "lines": [
+          "Dziś wyjaśnimy, czym są napisy zgodne z",
+          "WCAG."
+        ],
+        "text": "Dziś wyjaśnimy, czym są napisy zgodne z WCAG.",
+        "tokens": null
+      },
+      {
+        "id": "c4",
+        "index": 3,
+        "start_ms": 14500,
+        "end_ms": 16000,
+        "kind": "sound",
+        "speaker_id": null,
+        "lines": [
+          "[oklaski]"
+        ],
+        "text": "[oklaski]",
+        "tokens": null
+      },
+      {
+        "id": "c5",
+        "index": 4,
+        "start_ms": 17500,
+        "end_ms": 19000,
+        "kind": "sound",
+        "speaker_id": null,
+        "lines": [
+          "[pukanie do drzwi]"
+        ],
+        "text": "[pukanie do drzwi]",
+        "tokens": null
+      },
+      {
+        "id": "c6",
+        "index": 5,
+        "start_ms": 20500,
+        "end_ms": 24500,
+        "kind": "speech",
+        "speaker_id": "S2",
+        "lines": [
+          "Napisy to nie tylko tekst. To też opis",
+          "dźwięków otoczenia."
+        ],
+        "text": "Napisy to nie tylko tekst. To też opis dźwięków otoczenia.",
+        "tokens": null
+      },
+      {
+        "id": "c7",
+        "index": 6,
+        "start_ms": 26000,
+        "end_ms": 29500,
+        "kind": "speech",
+        "speaker_id": "S2",
+        "lines": [
+          "Dzięki temu materiał jest dostępny dla",
+          "każdego widza."
+        ],
+        "text": "Dzięki temu materiał jest dostępny dla każdego widza.",
+        "tokens": null
+      },
+      {
+        "id": "c1",
+        "index": 7,
+        "start_ms": 999999,
+        "end_ms": 2000,
+        "kind": "sound",
+        "speaker_id": null,
+        "lines": [
+          "[muzyka spokojna w tle]"
+        ],
+        "text": "[muzyka spokojna w tle]",
+        "tokens": null
+      }
+    ],
+    "wcag": {
+      "target": "WCAG 2.1 AA",
+      "ruleset_version": "1.0.0",
+      "compliant": false,
+      "generated_at": "2026-06-09T08:46:57.667398+00:00",
+      "stats": {
+        "cue_count": 7,
+        "error_count": 2,
+        "warning_count": 4
+      },
+      "issues": [
+        {
+          "code": "LINE_TOO_LONG",
+          "severity": "error",
+          "message": "Linia ma 51 znaków — limit 42: \"znacznie przekracza limit jednej linii napisow WCAG\"",
+          "cue_id": "c2",
+          "field": "lines"
+        },
+        {
+          "code": "READING_SPEED",
+          "severity": "warning",
+          "message": "Prędkość czytania 21.8 zn./s — zalecane <= 21 zn./s.",
+          "cue_id": "c2",
+          "field": null
+        },
+        {
+          "code": "LINE_TOO_LONG",
+          "severity": "warning",
+          "message": "Linia ma 39 znaków — zalecane <= 37: \"Dziś wyjaśnimy, czym są napisy zgodne z\"",
+          "cue_id": "c3",
+          "field": "lines"
+        },
+        {
+          "code": "LINE_TOO_LONG",
+          "severity": "warning",
+          "message": "Linia ma 38 znaków — zalecane <= 37: \"Napisy to nie tylko tekst. To też opis\"",
+          "cue_id": "c6",
+          "field": "lines"
+        },
+        {
+          "code": "LINE_TOO_LONG",
+          "severity": "warning",
+          "message": "Linia ma 38 znaków — zalecane <= 37: \"Dzięki temu materiał jest dostępny dla\"",
+          "cue_id": "c7",
+          "field": "lines"
+        },
+        {
+          "code": "DURATION_TOO_SHORT",
+          "severity": "error",
+          "message": "Napis wyświetlany -997999 ms — minimum 1000 ms.",
+          "cue_id": "c1",
+          "field": "end_ms"
+        }
+      ]
+    },
+    "style": {
+      "font_family": "system",
+      "font_size": 20,
+      "position": "bottom",
+      "background": true,
+      "max_chars_per_line": 42,
+      "max_lines": 2
+    },
+    "meta": {
+      "generated_at": "2026-06-09T08:46:57.662057+00:00",
+      "pipeline": {
+        "asr": "mock",
+        "diarization": "mock",
+        "sound_events": "mock"
+      },
+      "decision": {
+        "strategy": "automatic",
+        "transcript_source": "mock",
+        "no_api_first": true,
+        "fallback_used": false,
+        "fallbacks": [],
+        "notes": []
+      },
+      "quality": {
+        "transcription": 0.86,
+        "diarization": 0.62,
+        "sound_events": 0.86,
+        "segmentation": 1.0,
+        "wcag": 0.94,
+        "completeness": 0.968,
+        "overall": 0.875
+      }
+    }
+  }
+}

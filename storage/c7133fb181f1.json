@@ -1,0 +1,178 @@
+{
+  "id": "c7133fb181f1",
+  "status": "done",
+  "created_at": "2026-06-09T08:46:57.586616+00:00",
+  "updated_at": "2026-06-09T08:46:57.626241+00:00",
+  "filename": "test.mp4",
+  "error": null,
+  "result": {
+    "schema_version": "1.0",
+    "media": {
+      "filename": "test.mp4",
+      "source_kind": "video",
+      "duration_ms": 30000,
+      "language": "pl"
+    },
+    "speakers": [
+      {
+        "id": "S1",
+        "label": "Mówca 1",
+        "color": "white"
+      },
+      {
+        "id": "S2",
+        "label": "Mówca 2",
+        "color": "yellow"
+      }
+    ],
+    "cues": [
+      {
+        "id": "c1",
+        "index": 1,
+        "start_ms": 3500,
+        "end_ms": 7500,
+        "kind": "speech",
+        "speaker_id": "S1",
+        "lines": [
+          "Dzień dobry, witam w naszym kursie online."
+        ],
+        "text": "Dzień dobry, witam w naszym kursie online.",
+        "tokens": null
+      },
+      {
+        "id": "c2",
+        "index": 2,
+        "start_ms": 9000,
+        "end_ms": 13000,
+        "kind": "speech",
+        "speaker_id": "S2",
+        "lines": [
+          "Dziś wyjaśnimy, czym są",
+          "napisy zgodne z WCAG."
+        ],
+        "text": "Dziś wyjaśnimy, czym są napisy zgodne z WCAG.",
+        "tokens": null
+      },
+      {
+        "id": "c3",
+        "index": 3,
+        "start_ms": 13000,
+        "end_ms": 20500,
+        "kind": "sound",
+        "speaker_id": null,
+        "lines": [
+          "[cisza]"
+        ],
+        "text": "[cisza]",
+        "tokens": null
+      },
+      {
+        "id": "c4",
+        "index": 4,
+        "start_ms": 20500,
+        "end_ms": 24500,
+        "kind": "speech",
+        "speaker_id": "S1",
+        "lines": [
+          "Napisy to nie tylko tekst. To",
+          "też opis dźwięków otoczenia."
+        ],
+        "text": "Napisy to nie tylko tekst. To też opis dźwięków otoczenia.",
+        "tokens": null
+      },
+      {
+        "id": "c5",
+        "index": 5,
+        "start_ms": 26000,
+        "end_ms": 29500,
+        "kind": "speech",
+        "speaker_id": "S2",
+        "lines": [
+          "Dzięki temu materiał jest",
+          "dostępny dla każdego widza."
+        ],
+        "text": "Dzięki temu materiał jest dostępny dla każdego widza.",
+        "tokens": null
+      }
+    ],
+    "wcag": {
+      "target": "WCAG 2.1 AA",
+      "ruleset_version": "1.0.0",
+      "compliant": true,
+      "generated_at": "2026-06-09T08:46:57.626125+00:00",
+      "stats": {
+        "cue_count": 5,
+        "error_count": 0,
+        "warning_count": 4
+      },
+      "issues": [
+        {
+          "code": "LINE_TOO_LONG",
+          "severity": "warning",
+          "message": "Linia ma 42 znaków — zalecane <= 37: \"Dzień dobry, witam w naszym kursie online.\"",
+          "cue_id": "c1",
+          "field": "lines"
+        },
+        {
+          "code": "DURATION_TOO_LONG",
+          "severity": "warning",
+          "message": "Napis wyświetlany 7500 ms — zalecane maks. 7000 ms.",
+          "cue_id": "c3",
+          "field": "end_ms"
+        },
+        {
+          "code": "GAP_TOO_SHORT",
+          "severity": "warning",
+          "message": "Przerwa 0 ms względem poprzedniego napisu — zalecane >= 1500 ms (anty-miganie).",
+          "cue_id": "c3",
+          "field": "start_ms"
+        },
+        {
+          "code": "GAP_TOO_SHORT",
+          "severity": "warning",
+          "message": "Przerwa 0 ms względem poprzedniego napisu — zalecane >= 1500 ms (anty-miganie).",
+          "cue_id": "c4",
+          "field": "start_ms"
+        }
+      ]
+    },
+    "style": {
+      "font_family": "system",
+      "font_size": 20,
+      "position": "bottom",
+      "background": true,
+      "max_chars_per_line": 42,
+      "max_lines": 2
+    },
+    "meta": {
+      "generated_at": "2026-06-09T08:46:57.625953+00:00",
+      "pipeline": {
+        "asr": "faster-whisper-local",
+        "diarization": "heuristic-turns",
+        "sound_events": "open-audio-events"
+      },
+      "decision": {
+        "strategy": "automatic",
+        "transcript_source": "demo",
+        "no_api_first": true,
+        "fallback_used": true,
+        "fallbacks": [
+          "audio-extract -> demo-transcript"
+        ],
+        "notes": [
+          "Ekstrakcja audio niedostępna: Ekstrakcja audio z wideo (ffmpeg) nie powiodła się: 100\n  libavdevice    58. 13.100 / 58. 13.100\n  libavfilter     7.110.100 /  7.110.100\n  libswscale      5.  9.100 /  5.  9.100\n  libswresample   3.  9.100 /  3.  9.100\n  libpostproc    55.  9.100 / 55.  9.100\n[mov,mp4,m4a,3gp,3g2,mj2 @ 0x645cf2be1200] Format mov,mp4,m4a,3gp,3g2,mj2 detected only with low score of 1, misdetection possible!\n[mov,mp4,m4a,3gp,3g2,mj2 @ 0x645cf2be1200] moov atom not found\n/sessions/zealous-peaceful-newton/tmp/tmpsrz__d3z.mp4: Invalid data found when processing input\n",
+          "Brak pliku — użyto demonstracyjnego transkryptu (no-API-first)."
+        ]
+      },
+      "quality": {
+        "transcription": 0.55,
+        "diarization": 0.62,
+        "sound_events": 0.42,
+        "segmentation": 1.0,
+        "wcag": 0.76,
+        "completeness": 0.977,
+        "overall": 0.721
+      }
+    }
+  }
+}

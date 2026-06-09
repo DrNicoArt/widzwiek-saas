@@ -30,6 +30,8 @@ import ExportButtons from "@/components/ExportButtons";
 import TranscriptTable from "@/components/result/TranscriptTable";
 import CaptionsTable from "@/components/result/CaptionsTable";
 import SpeakersSounds from "@/components/result/SpeakersSounds";
+import ProjectCard from "@/components/dashboard/ProjectCard";
+import { DEMO_PROJECTS } from "@/lib/mockData";
 import { fadeUp } from "@/lib/motion";
 
 type Phase = "idle" | "uploading" | "processing" | "done" | "error";
@@ -182,8 +184,8 @@ function StudioInner() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <PageHeader icon="upload" title="Nowy materiał"
-        desc="Wgraj plik audio/wideo i uruchom przetwarzanie — albo zobacz pełny przepływ na przykładowym materiale (bez backendu)." />
+      <PageHeader icon="captions" title="Studio"
+        desc="Twoje miejsce pracy: wgraj nowy materiał i pracuj nad swoimi napisami — transkrypcja, mówcy, dźwięki, raport WCAG i eksport w jednym." />
 
       <div className="space-y-8">
         <Section>
@@ -285,6 +287,19 @@ function StudioInner() {
           </motion.div>
         </Section>
 
+        {phase === "idle" && !sample && (
+          <Section>
+            <motion.div variants={fadeUp}>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="folder" size={16} className="text-brand-600" /> Twoje materiały</h3>
+                <Link href="/app/projekty" className="text-xs font-medium text-brand-700 hover:underline">Wszystkie →</Link>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {DEMO_PROJECTS.map((pr) => <ProjectCard key={pr.id} p={pr} />)}
+              </div>
+            </motion.div>
+          </Section>
+        )}
         {phase !== "idle" && (
           <Section><motion.div variants={fadeUp}><L n={2}>Przetwarzanie {sample && <span className="ml-1 text-[11px] normal-case text-brand-700">· tryb przykładowy</span>}</L><ProcessingPipeline activeIndex={ps.active} progress={ps.progress} error={ps.error} /></motion.div></Section>
         )}
