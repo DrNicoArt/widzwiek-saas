@@ -39,6 +39,7 @@ class Settings:
     prefer_platform_captions: bool = os.getenv("WIDZWIEK_PREFER_PLATFORM_CAPTIONS", "1") != "0"
     enable_sound_events: bool = os.getenv("WIDZWIEK_ENABLE_SOUND_EVENTS", "1") != "0"
 
+    admin_token: str = os.getenv("WIDZWIEK_ADMIN_TOKEN", "")  # gdy ustawiony: /api/config wymaga naglowka X-Admin-Token
     storage_dir: str = os.getenv("WIDZWIEK_STORAGE_DIR", "./storage")
     storage_limit_mb: int = int(os.getenv("WIDZWIEK_STORAGE_LIMIT_MB", "200"))
 

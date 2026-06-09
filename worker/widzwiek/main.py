@@ -9,7 +9,7 @@ import os
 import tempfile
 from typing import Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
@@ -66,7 +66,11 @@ class ConfigUpdate(BaseModel):
 
 
 @app.post("/api/config")
-def update_config(cfg: ConfigUpdate) -> dict:
+def update_config(cfg: ConfigUpdate, x_admin_token: Optional[str] = Header(default=None)) -> dict:
+    # Hardening (Krok 5): w produkcji ustaw WIDZWIEK_ADMIN_TOKEN; wtedy endpoint wymaga naglowka.
+    # Docelowo (Model B) ten endpoint znika z prod — klucze providerow to sekrety platformy z env.
+    if settings.admin_token and x_admin_token != settings.admin_token:
+        raise HTTPException(status_code=401, detail="Brak/zly token administracyjny.")
     """Ustawia konfigurację w PAMIĘCI procesu workera (klucz/tryb/model).
 
     Sekret NIE jest zapisywany na dysk ani w repo — żyje tylko do restartu workera.
