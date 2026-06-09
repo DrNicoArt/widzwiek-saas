@@ -58,7 +58,7 @@ export default function ProjectLayout({ children }: { children: ReactNode }) {
       <div className="mb-5 flex flex-wrap items-start gap-3">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name="captions" size={22} /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-brand-600">Studio</p>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-brand-600">Materiał</p>
           <h1 className="truncate text-xl font-medium text-graphite">{loading ? "Wczytywanie…" : found ? title : "Materiał nieznany"}</h1>
           <p className="text-xs text-muted">{meta.length ? meta.join(" · ") : (real ? "materiał wgrany (edytowalny)" : "materiał przykładowy (demo)")}</p>
         </div>
