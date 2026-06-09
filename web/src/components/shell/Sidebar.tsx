@@ -10,14 +10,13 @@ import { StatusDot } from "@/components/ui/Badge";
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/app", label: "Przegląd", icon: "grid" },
   { href: "/app/studio", label: "Studio", icon: "captions" },
-  { href: "/app/skaner", label: "Skaner WCAG", icon: "search" },
   { href: "/app/plan", label: "Plan i płatności", icon: "card" },
   { href: "/app/ustawienia", label: "Ustawienia", icon: "settings" },
 ];
 
 export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
   const pathname = usePathname();
-  const isActive = (href: string) => (href === "/app" ? pathname === "/app" : href === "/app/studio" ? (pathname.startsWith("/app/studio") || pathname.startsWith("/app/projekty")) : pathname.startsWith(href));
+  const isActive = (href: string) => (href === "/app" ? pathname === "/app" : href === "/app/studio" ? (pathname.startsWith("/app/studio") || pathname.startsWith("/app/projekty") || pathname.startsWith("/app/skaner")) : pathname.startsWith(href));
   return (
     <aside className="relative hidden w-[248px] shrink-0 flex-col overflow-hidden border-r border-hair/70 bg-white/55 backdrop-blur-xl lg:flex">
       <div className="px-5 pb-3 pt-6"><Link href="/" aria-label="Widźwięk — strona główna"><BrandLogo width="170" /></Link></div>

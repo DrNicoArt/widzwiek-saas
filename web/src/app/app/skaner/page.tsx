@@ -60,7 +60,7 @@ export default function AudytBiblioteki() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <PageHeader icon="search" title="Skaner WCAG" desc="Sprawdź wiele materiałów naraz i otrzymaj jeden werdykt zgodności WCAG dla całej organizacji — z rankingiem najczęstszych problemów." />
+      <PageHeader icon="search" title="Sprawdź wiele materiałów" desc="Wrzuć wiele plików napisów naraz i otrzymaj jeden werdykt zgodności WCAG dla całej biblioteki — z rankingiem najczęstszych problemów." />
 
       {/* Wsad */}
       <motion.div initial="hidden" animate="show" variants={fadeUp} className="mb-6 rounded-2xl border border-hair/70 bg-white/85 p-5 shadow-card backdrop-blur-sm">

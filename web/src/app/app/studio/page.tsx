@@ -210,7 +210,10 @@ function StudioInner() {
                 <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Uruchom demo na przykładzie</Button>
               </div>
             )}
-            <div className="mt-3 rounded-xl border border-hair/70 bg-white/60 px-4 py-3">
+            <details className="mt-3 rounded-xl border border-hair/70 bg-white/50">
+              <summary className="focusring cursor-pointer list-none px-4 py-2.5 text-sm font-medium text-graphite">Inne sposoby dodania materiału — link albo import SRT/VTT</summary>
+              <div className="px-3 pb-3">
+            <div className="mt-1 rounded-xl border border-hair/70 bg-white/60 px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Icon name="external" size={18} className="text-brand-600" />
                 <label htmlFor="sourceUrl" className="text-sm font-medium text-graphite">Link do materiału</label>
@@ -229,6 +232,8 @@ function StudioInner() {
               <Button variant="secondary" icon="upload" loading={importing} disabled={workerUp === false} onClick={() => importRef.current?.click()}>Importuj SRT / VTT</Button>
               <input ref={importRef} type="file" accept=".srt,.vtt,text/vtt,application/x-subrip" className="hidden" onChange={(e) => onImport(e.target.files?.[0] ?? null)} />
             </div>
+              </div>
+            </details>
 
             {sample && !file && (
               <div className="mt-4 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
@@ -253,6 +258,7 @@ function StudioInner() {
               </div>
             )}
 
+            {(file || sample) && (<>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || (workerUp === false && !IS_STATIC_DEMO && !hasKey)} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
               <Button variant="secondary" onClick={() => file && runLocal(file)} disabled={!file || busy} icon="sparkles" title="Transkrypcja Whisper w Twojej przeglądarce — bez API, bez wysyłania pliku na serwer. Model wybierasz obok; pobiera się raz.">Transkrybuj bez API (w przeglądarce)</Button>
@@ -284,9 +290,26 @@ function StudioInner() {
                 <p className="mt-2 text-[11px] text-muted">Działa lokalnie w przeglądarce — plik nie opuszcza Twojego urządzenia. Dłuższe materiały mogą zająć kilka minut.</p>
               </div>
             )}
+            </>)}
           </motion.div>
         </Section>
 
+        {phase === "idle" && !sample && (
+          <Section>
+            <motion.div variants={fadeUp} className="grid gap-4 sm:grid-cols-2">
+              <Link href="/app/skaner" className="spotlight focusring group flex items-center gap-4 rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm transition-all hover:border-brand-200 hover:shadow-lift">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name="search" size={20} /></span>
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium text-graphite">Sprawdź wiele materiałów naraz</p><p className="mt-0.5 text-xs text-muted">Jeden werdykt WCAG dla całej biblioteki</p></div>
+                <Icon name="chevron" size={18} className="text-muted transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link href="/app/projekty" className="spotlight focusring group flex items-center gap-4 rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm transition-all hover:border-brand-200 hover:shadow-lift">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name="folder" size={20} /></span>
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium text-graphite">Wszystkie materiały</p><p className="mt-0.5 text-xs text-muted">Biblioteka projektów i ich status WCAG</p></div>
+                <Icon name="chevron" size={18} className="text-muted transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </motion.div>
+          </Section>
+        )}
         {phase === "idle" && !sample && (
           <Section>
             <motion.div variants={fadeUp}>
