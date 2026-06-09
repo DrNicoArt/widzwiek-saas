@@ -13,7 +13,8 @@ import { probeAudioPresence } from "@/lib/audioProbe";
 import { parseSubtitles } from "@/lib/importSubs";
 import { transcribeWithProvider } from "@/lib/cloudAsr";
 import { transcribeLocally, type LocalProgress } from "@/lib/localAsr";
-import { ASR_MODELS, getAsrModel, setAsrModel } from "@/lib/asrModel";
+import { getAsrModel } from "@/lib/asrModel";
+import { ENGINE_MODES, getEngineMode, setEngineMode, type EngineMode } from "@/lib/engineMode";
 import { getUserAsr } from "@/lib/userKey";
 import { DEFAULT_PROCESSING_DECISION } from "@/lib/orchestration";
 import { useWorkerUp } from "@/components/shell/AppShell";
@@ -84,6 +85,7 @@ function StudioInner() {
   const [hasKey, setHasKey] = useState(false);
   const [localProg, setLocalProg] = useState<LocalProgress | null>(null);
   const [asrModel, setAsrModelState] = useState<string>("");
+  const [engineMode, setEngineModeState] = useState<EngineMode>("auto");
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
   const pick = () => inputRef.current?.click();
@@ -121,7 +123,7 @@ function StudioInner() {
 
   // wejście z ?sample=1 (np. z banera offline / dashboardu)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setHasKey(!!getUserAsr()); setAsrModelState(getAsrModel()); if (params.get("sample") === "1") runSample(); }, []);
+  useEffect(() => { setHasKey(!!getUserAsr()); setAsrModelState(getAsrModel()); setEngineModeState(getEngineMode()); if (params.get("sample") === "1") runSample(); }, []);
 
   async function runCloud(f: File) {
     setError(null); setSample(false); setPhase("processing");
@@ -252,9 +254,15 @@ function StudioInner() {
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || (workerUp === false && !IS_STATIC_DEMO && !hasKey)} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
               <Button variant="secondary" onClick={() => file && runLocal(file)} disabled={!file || busy} icon="sparkles" title="Transkrypcja Whisper w Twojej przeglądarce — bez API, bez wysyłania pliku na serwer. Model wybierasz obok; pobiera się raz.">Transkrybuj bez API (w przeglądarce)</Button>
-              <select value={asrModel} onChange={(e) => { setAsrModel(e.target.value); setAsrModelState(e.target.value); }} aria-label="Model transkrypcji" title="Model transkrypcji — pobiera się w przeglądarce (jakość vs szybkość)" className="focusring rounded-xl border border-hair bg-white px-2.5 py-2 text-xs text-graphite">
-                {ASR_MODELS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-              </select>
+              <div className="inline-flex flex-wrap items-center gap-1.5 rounded-xl border border-hair bg-white p-1" role="group" aria-label="Silnik AI — tryb">
+                {ENGINE_MODES.map((m) => (
+                  <button key={m.id} type="button" title={m.desc}
+                    onClick={() => { setEngineMode(m.id); setEngineModeState(m.id); setAsrModelState(getAsrModel()); }}
+                    className={`focusring rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${engineMode === m.id ? "bg-brand-600 text-white" : "text-graphite hover:bg-brand-50"}`}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
               {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> albo uruchom worker w środowisku dev.</span>}
               {hasKey ? (
                 <span className="inline-flex items-center gap-1.5 text-xs text-ok"><Icon name="checkCircle" size={14} /> Klucz dostawcy wykryty — plik zostanie przetranskrybowany w Twojej przeglądarce.</span>
