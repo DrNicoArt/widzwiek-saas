@@ -7,6 +7,17 @@ export const WORKER_URL =
   process.env.NEXT_PUBLIC_WORKER_URL?.replace(/\/$/, "") || "http://localhost:8000";
 export const IS_STATIC_DEMO = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
 
+// Token organizacji do workera (tryb serwerowy z auth). Z env albo localStorage; pusty = brak naglowka.
+export function getApiToken(): string {
+  const env = process.env.NEXT_PUBLIC_WORKER_TOKEN as string | undefined;
+  if (env) return env;
+  try { return (typeof window !== "undefined" && window.localStorage?.getItem("widzwiek.api_token")) || ""; } catch { return ""; }
+}
+function authHeaders(): Record<string, string> {
+  const t = getApiToken();
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
 export type ExportFmt = "srt" | "vtt" | "txt" | "json";
 
 export interface HealthInfo {
@@ -61,14 +72,14 @@ export async function createJob(file: File): Promise<Job> {
   }
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${WORKER_URL}/api/jobs`, { method: "POST", body: form });
+  const res = await fetch(`${WORKER_URL}/api/jobs`, { method: "POST", body: form, headers: authHeaders() });
   if (!res.ok) throw new Error(`Worker zwrócił błąd ${res.status} przy tworzeniu joba.`);
   return res.json();
 }
 
 export async function getJob(id: string): Promise<Job> {
   if (IS_STATIC_DEMO) return staticJob ?? makeStaticJob();
-  const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { cache: "no-store" });
+  const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się pobrać joba ${id} (${res.status}).`);
   return res.json();
 }
@@ -78,7 +89,7 @@ export interface StorageInfo { count: number; used_bytes: number; limit_bytes: n
 export async function getStorage(): Promise<StorageInfo | null> {
   if (IS_STATIC_DEMO) return { count: 0, used_bytes: 0, limit_bytes: 200 * 1024 * 1024, over_limit: false };
   try {
-    const res = await fetch(`${WORKER_URL}/api/storage`, { cache: "no-store" });
+    const res = await fetch(`${WORKER_URL}/api/storage`, { cache: "no-store", headers: authHeaders() });
     return res.ok ? res.json() : null;
   } catch {
     return null;
@@ -87,21 +98,21 @@ export async function getStorage(): Promise<StorageInfo | null> {
 
 export async function listJobs(): Promise<Job[]> {
   if (IS_STATIC_DEMO) return [];
-  const res = await fetch(`${WORKER_URL}/api/jobs`, { cache: "no-store" });
+  const res = await fetch(`${WORKER_URL}/api/jobs`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się pobrać listy materiałów (${res.status}).`);
   return res.json();
 }
 
 export async function deleteJob(id: string): Promise<void> {
   if (IS_STATIC_DEMO) return;
-  const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { method: "DELETE" });
+  const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się usunąć materiału (${res.status}).`);
 }
 
 export async function importJob(filename: string, document: CaptionDocument): Promise<Job> {
   if (IS_STATIC_DEMO) return makeStaticJob(filename, document);
   const res = await fetch(`${WORKER_URL}/api/jobs/import`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ filename, document }),
   });
   if (!res.ok) {
@@ -115,7 +126,7 @@ export async function updateDocument(id: string, doc: CaptionDocument): Promise<
   if (IS_STATIC_DEMO) return makeStaticJob(staticJob?.filename ?? "material-demo", doc);
   const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(doc),
   });
   if (!res.ok) throw new Error(`Nie udało się zapisać zmian (${res.status}).`);
@@ -129,7 +140,7 @@ export function exportUrl(id: string, fmt: ExportFmt): string {
 export async function getHealth(): Promise<HealthInfo | null> {
   if (IS_STATIC_DEMO) return staticHealth();
   try {
-    const res = await fetch(`${WORKER_URL}/health`, { cache: "no-store" });
+    const res = await fetch(`${WORKER_URL}/health`, { cache: "no-store", headers: authHeaders() });
     return res.ok ? res.json() : null;
   } catch {
     return null;
@@ -145,7 +156,7 @@ export async function setConfig(body: ConfigUpdate): Promise<HealthInfo> {
   if (IS_STATIC_DEMO) return staticHealth();
   const res = await fetch(`${WORKER_URL}/api/config`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
