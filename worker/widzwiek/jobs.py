@@ -57,16 +57,19 @@ class JobStore:
             except Exception:  # noqa: BLE001 — uszkodzony plik pomijamy
                 continue
 
-    def create(self, filename: str) -> Job:
-        job = Job(id=uuid.uuid4().hex[:12], status=JobStatus.queued, filename=filename)
+    def create(self, filename: str, org_id: str = "demo") -> Job:
+        job = Job(id=uuid.uuid4().hex[:12], org_id=org_id, status=JobStatus.queued, filename=filename)
         self._jobs[job.id] = job
         return job
 
     def get(self, job_id: str) -> Optional[Job]:
         return self._jobs.get(job_id)
 
-    def list(self) -> list[Job]:
-        return sorted(self._jobs.values(), key=lambda j: j.updated_at, reverse=True)
+    def list(self, org_id: Optional[str] = None) -> list[Job]:
+        items = self._jobs.values()
+        if org_id is not None:
+            items = [j for j in items if j.org_id == org_id]
+        return sorted(items, key=lambda j: j.updated_at, reverse=True)
 
     def delete(self, job_id: str) -> bool:
         existed = self._jobs.pop(job_id, None) is not None

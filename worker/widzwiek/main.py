@@ -10,12 +10,13 @@ import tempfile
 import threading
 from typing import Optional
 
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from .api_check import readiness
+from .auth import current_org
 from .config import settings
 from .contracts import CaptionDocument, Job, JobStatus
 from .export import to_srt, to_txt, to_vtt
@@ -99,17 +100,17 @@ class URLJobRequest(BaseModel):
 
 
 @app.post("/api/jobs/import", response_model=Job)
-def import_job(req: ImportRequest) -> Job:
+def import_job(req: ImportRequest, org: str = Depends(current_org)) -> Job:
     """Import gotowych napisow (SRT/VTT sparsowane na froncie) jako trwaly job.
     Normalizuje linie wg stylu i waliduje WCAG. Offline, bez AI."""
     if store.storage_usage()["over_limit"]:
         raise HTTPException(status_code=413, detail="Limit magazynu przekroczony. Usun materialy, aby dodac nowe.")
-    job = store.create(filename=req.filename)
+    job = store.create(filename=req.filename, org_id=org)
     return store.update_document(job, req.document)
 
 
 @app.post("/api/jobs/url", response_model=Job)
-def create_url_job(req: URLJobRequest) -> Job:
+def create_url_job(req: URLJobRequest, org: str = Depends(current_org)) -> Job:
     """URL -> istniejące napisy/auto-captiony przez no-key źródła.
 
     Nie pobiera wideo/audio. Jeśli platforma nie udostępnia napisów, job kończy się
@@ -119,16 +120,16 @@ def create_url_job(req: URLJobRequest) -> Job:
         raise HTTPException(status_code=413, detail="Limit magazynu przekroczony. Usun materialy, aby dodac nowe.")
     if not req.url.strip().lower().startswith(("http://", "https://")):
         raise HTTPException(status_code=400, detail="Podaj poprawny URL http(s).")
-    job = store.create(filename=req.url.strip())
+    job = store.create(filename=req.url.strip(), org_id=org)
     return store.process_url(job, req.url.strip())
 
 
 @app.post("/api/jobs", response_model=Job)
-async def create_job(file: UploadFile = File(...)) -> Job:
+async def create_job(file: UploadFile = File(...), org: str = Depends(current_org)) -> Job:
     """Upload pliku audio/wideo -> utworzenie joba i uruchomienie pipeline'u."""
     if store.storage_usage()["over_limit"]:
         raise HTTPException(status_code=413, detail="Limit magazynu przekroczony. Usun materialy, aby dodac nowe.")
-    job = store.create(filename=file.filename or "upload")
+    job = store.create(filename=file.filename or "upload", org_id=org)
 
     audio_path: Optional[str] = None
     try:
@@ -160,16 +161,16 @@ async def create_job(file: UploadFile = File(...)) -> Job:
 
 
 @app.get("/api/jobs/{job_id}", response_model=Job)
-def get_job(job_id: str) -> Job:
+def get_job(job_id: str, org: str = Depends(current_org)) -> Job:
     job = store.get(job_id)
-    if not job:
+    if not job or job.org_id != org:
         raise HTTPException(status_code=404, detail="Job nie istnieje.")
     return job
 
 
-def _require_done(job_id: str) -> Job:
+def _require_done(job_id: str, org: str) -> Job:
     job = store.get(job_id)
-    if not job:
+    if not job or job.org_id != org:
         raise HTTPException(status_code=404, detail="Job nie istnieje.")
     if not job.result:
         raise HTTPException(status_code=409, detail=f"Job nie jest gotowy (status: {job.status}).")
@@ -183,53 +184,55 @@ def storage() -> dict:
 
 
 @app.get("/api/jobs", response_model=list[Job])
-def list_jobs() -> list[Job]:
-    """Lista zapisanych materialow (trwala, laduje sie z dysku po restarcie)."""
-    return store.list()
+def list_jobs(org: str = Depends(current_org)) -> list[Job]:
+    """Lista materialow danej organizacji (trwala, laduje sie z dysku po restarcie)."""
+    return store.list(org)
 
 
 @app.delete("/api/jobs/{job_id}")
-def delete_job(job_id: str) -> dict:
-    if not store.delete(job_id):
+def delete_job(job_id: str, org: str = Depends(current_org)) -> dict:
+    job = store.get(job_id)
+    if not job or job.org_id != org:
         raise HTTPException(status_code=404, detail="Job nie istnieje.")
+    store.delete(job_id)
     return {"ok": True}
 
 
 @app.put("/api/jobs/{job_id}", response_model=Job)
-def update_job_document(job_id: str, doc: CaptionDocument) -> Job:
+def update_job_document(job_id: str, doc: CaptionDocument, org: str = Depends(current_org)) -> Job:
     """Edytor napisow: zapis poprawionego dokumentu -> normalizacja + ponowna
     walidacja WCAG + trwaly zapis. W pelni offline (bez AI)."""
     job = store.get(job_id)
-    if not job:
+    if not job or job.org_id != org:
         raise HTTPException(status_code=404, detail="Job nie istnieje.")
     return store.update_document(job, doc)
 
 
 @app.get("/api/jobs/{job_id}/export/txt", response_class=PlainTextResponse)
-def export_txt(job_id: str) -> PlainTextResponse:
-    job = _require_done(job_id)
+def export_txt(job_id: str, org: str = Depends(current_org)) -> PlainTextResponse:
+    job = _require_done(job_id, org)
     return PlainTextResponse(to_txt(job.result), media_type="text/plain",
                              headers={"Content-Disposition": f'attachment; filename="{job_id}.txt"'})
 
 
 @app.get("/api/jobs/{job_id}/export/json", response_class=PlainTextResponse)
-def export_json(job_id: str) -> PlainTextResponse:
-    job = _require_done(job_id)
+def export_json(job_id: str, org: str = Depends(current_org)) -> PlainTextResponse:
+    job = _require_done(job_id, org)
     return PlainTextResponse(job.result.model_dump_json(indent=2), media_type="application/json",
                              headers={"Content-Disposition": f'attachment; filename="{job_id}.json"'})
 
 
 @app.get("/api/jobs/{job_id}/export/srt", response_class=PlainTextResponse)
-def export_srt(job_id: str) -> PlainTextResponse:
-    job = _require_done(job_id)
+def export_srt(job_id: str, org: str = Depends(current_org)) -> PlainTextResponse:
+    job = _require_done(job_id, org)
     content = to_srt(job.result)  # type: ignore[arg-type]
     return PlainTextResponse(content, media_type="application/x-subrip",
                              headers={"Content-Disposition": f'attachment; filename="{job_id}.srt"'})
 
 
 @app.get("/api/jobs/{job_id}/export/vtt", response_class=PlainTextResponse)
-def export_vtt(job_id: str) -> PlainTextResponse:
-    job = _require_done(job_id)
+def export_vtt(job_id: str, org: str = Depends(current_org)) -> PlainTextResponse:
+    job = _require_done(job_id, org)
     content = to_vtt(job.result)  # type: ignore[arg-type]
     return PlainTextResponse(content, media_type="text/vtt",
                              headers={"Content-Disposition": f'attachment; filename="{job_id}.vtt"'})

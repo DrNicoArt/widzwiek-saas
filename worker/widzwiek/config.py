@@ -13,6 +13,19 @@ def _origins() -> list[str]:
     return [o.strip() for o in raw.split(",") if o.strip()]
 
 
+def _api_tokens() -> dict:
+    """WIDZWIEK_API_TOKENS = "token1:org1,token2:org2". Pusty => auth wylaczony (tryb demo)."""
+    raw = os.getenv("WIDZWIEK_API_TOKENS", "").strip()
+    out: dict = {}
+    for part in raw.split(","):
+        part = part.strip()
+        if ":" in part:
+            tok, org = part.split(":", 1)
+            if tok.strip() and org.strip():
+                out[tok.strip()] = org.strip()
+    return out
+
+
 @dataclass
 class Settings:
     host: str = os.getenv("WIDZWIEK_HOST", "127.0.0.1")
@@ -41,6 +54,7 @@ class Settings:
 
     admin_token: str = os.getenv("WIDZWIEK_ADMIN_TOKEN", "")  # gdy ustawiony: /api/config wymaga naglowka X-Admin-Token
     async_jobs: bool = os.getenv("WIDZWIEK_ASYNC", "0") == "1"  # 1 = przetwarzanie w tle (dlugie pliki nie blokuja)
+    api_tokens: dict = field(default_factory=_api_tokens)  # token API -> org_id; pusty = tryb otwarty
     storage_dir: str = os.getenv("WIDZWIEK_STORAGE_DIR", "./storage")
     storage_limit_mb: int = int(os.getenv("WIDZWIEK_STORAGE_LIMIT_MB", "200"))
 

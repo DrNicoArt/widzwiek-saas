@@ -176,6 +176,7 @@ class JobStatus(str, Enum):
 
 class Job(BaseModel):
     id: str
+    org_id: str = "demo"            # wielodostepnosc: materialy izolowane per organizacja
     status: JobStatus = JobStatus.queued
     created_at: str = Field(default_factory=_now_iso)
     updated_at: str = Field(default_factory=_now_iso)
