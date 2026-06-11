@@ -86,6 +86,18 @@ export async function getJob(id: string): Promise<Job> {
 
 export interface StorageInfo { count: number; used_bytes: number; limit_bytes: number; over_limit: boolean; }
 
+export interface UsageInfo { org_id: string; events: number; wcag_minutes: number; credits: number; }
+
+export async function getUsage(): Promise<UsageInfo | null> {
+  if (IS_STATIC_DEMO) return null;
+  try {
+    const res = await fetch(`${WORKER_URL}/api/usage`, { cache: "no-store", headers: authHeaders() });
+    return res.ok ? res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getStorage(): Promise<StorageInfo | null> {
   if (IS_STATIC_DEMO) return { count: 0, used_bytes: 0, limit_bytes: 200 * 1024 * 1024, over_limit: false };
   try {
