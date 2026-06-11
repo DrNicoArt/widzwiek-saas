@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
-const staticDemo = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
-
+// NEXT_PUBLIC_STATIC_DEMO steruje TYLKO zachowaniem (silnik w przeglądarce, bez workera),
+// NIE trybem builda. Wcześniej 'output: export' generował statycznie tylko znane id projektów,
+// przez co każdy nowo przetworzony materiał (dynamiczne id) zwracał 404. Na Vercelu Next działa
+// natywnie i dynamiczne ścieżki rozwiązują się w czasie wykonania — bez 404.
 const nextConfig = {
   reactStrictMode: true,
-  ...(staticDemo ? { output: "export", trailingSlash: true } : {}),
 };
 
 export default nextConfig;

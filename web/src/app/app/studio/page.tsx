@@ -168,7 +168,7 @@ function StudioInner() {
 
   async function handleRun() {
     if (!file && sourceUrl.trim()) {
-      setError("Import z linku jest przygotowany jako placeholder. Demo pokazuje decyzję orkiestratora, ale nie wykonuje pobierania z platform ani scrapingu.");
+      setError("Pobieranie napisów z linku działa w trybie serwerowym (worker z yt-dlp pobiera istniejące napisy). W wersji demo w przeglądarce wgraj plik audio/wideo albo zaimportuj SRT/VTT.");
       return;
     }
     if (!file) return;
@@ -235,7 +235,7 @@ function StudioInner() {
                 <input id="sourceUrl" value={sourceUrl} onChange={(e) => { setSourceUrl(e.target.value); setFile(null); setSample(false); }}
                   placeholder="YouTube, TikTok, Vimeo albo publiczny URL — orkiestrator najpierw sprawdzi dostępne napisy"
                   className="focusring min-w-0 flex-1 rounded-xl border border-hair bg-white px-3 py-2.5 text-sm text-graphite placeholder:text-muted/70" />
-                <Button variant="secondary" icon="sparkles" onClick={handleRun} disabled={!sourceUrl.trim() || busy}>Sprawdź ścieżkę</Button>
+                <Button variant="secondary" icon="external" onClick={handleRun} disabled={!sourceUrl.trim() || busy}>Pobierz napisy z linku</Button>
               </div>
               <p className="mt-2 text-xs text-muted">Plan orkiestratora: sprawdzenie istniejących napisów → import transkryptu → ASR tylko gdy potrzebny. Demo nie pobiera materiałów z platform i nie obchodzi regulaminów.</p>
             </div>
