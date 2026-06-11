@@ -161,3 +161,7 @@ Kolejność wg zależności (każdy krok zostawia działające demo):
 8. **Wdrożenie v1** — managed Postgres+Redis+Object Storage+workery+API+frontend; secrets manager; CI/CD; backupy.
 
 **Jedno zdanie:** Widźwięk jest bardzo dobrym PoC z właściwym rdzeniem i unikalnym silnikiem klientowym, ale do roli produktu nr 1 brakuje warstwy serwerowej (dane/kolejka/storage/auth/billing) i realnego orkiestratora providerów — i to jest właściwa kolejność prac.
+
+---
+
+> **Uwaga kierunkowa:** priorytety z sekcji 8 są skorygowane w `docs/QUALITY_THESIS.md` — jakość wyniku, warstwa pewności i pętla uczenia wyprzedzają provider orchestration. Patrz ten dokument jako nadrzędny dla kolejności prac.
