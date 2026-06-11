@@ -1,47 +1,32 @@
-# Widźwięk — szkielet wdrożenia (jeden VPS na start, granice usług gotowe do rozdzielenia).
-# Sekrety przez .env / secrets manager (NIE commitować). Scaffold Kroków 3/9.
-version: "3.9"
+# Widźwięk — stack jednego hosta. RDZEŃ teraz = worker (transkrypcja+dźwięki+WCAG+eksport).
+# Sekrety przez .env (NIE commitować). Frontend zwykle na Vercelu (osobno), ale można i tu.
 services:
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: widzwiek
-      POSTGRES_USER: widzwiek
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes: [ "pgdata:/var/lib/postgresql/data", "./db:/docker-entrypoint-initdb.d:ro" ]
-    ports: [ "5432:5432" ]
-
-  redis:
-    image: redis:7
-    ports: [ "6379:6379" ]
-
-  # MinIO = S3-compatible object storage do dev (prod: S3/R2)
-  storage:
-    image: minio/minio
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD}
-    volumes: [ "miniodata:/data" ]
-    ports: [ "9000:9000", "9001:9001" ]
-
-  api:
-    build: ../services/api
-    environment:
-      DATABASE_URL: postgresql://widzwiek:${POSTGRES_PASSWORD}@db:5432/widzwiek
-      REDIS_URL: redis://redis:6379/0
-      STORAGE_ENDPOINT: http://storage:9000
-    depends_on: [ db, redis, storage ]
-    ports: [ "8000:8000" ]
-
   worker:
-    build: ../services/worker
+    build: ../worker            # realny worker (FastAPI). Obraz: worker/Dockerfile
     environment:
-      DATABASE_URL: postgresql://widzwiek:${POSTGRES_PASSWORD}@db:5432/widzwiek
-      REDIS_URL: redis://redis:6379/0
-      STORAGE_ENDPOINT: http://storage:9000
-    depends_on: [ db, redis, storage ]
-    deploy:
-      replicas: 2          # pula workerów — skalowanie poziome
+      PIPELINE_MODE: ${PIPELINE_MODE:-auto}        # auto = faster-whisper (lokalnie, bez API)
+      WIDZWIEK_CORS_ORIGINS: ${WIDZWIEK_CORS_ORIGINS:-http://localhost:3000}
+      WIDZWIEK_ADMIN_TOKEN: ${WIDZWIEK_ADMIN_TOKEN:-}
+    volumes:
+      - workerdata:/data         # joby (storage) + modele Whisper (cache)
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
 
-volumes: { pgdata: {}, miniodata: {} }
+  # Frontend opcjonalnie tu; docelowo na Vercelu z NEXT_PUBLIC_WORKER_URL -> adres workera.
+  # web:
+  #   build: ../web
+  #   environment:
+  #     NEXT_PUBLIC_WORKER_URL: http://worker:8000
+  #   ports: [ "3000:3000" ]
+  #   depends_on: [ worker ]
+
+  # === PRZYSZŁOŚĆ (konta/płatności/skala) — odkomentuj przy Krokach 2/3/6 ===
+  # db:      { image: postgres:16, environment: { POSTGRES_DB: widzwiek, POSTGRES_USER: widzwiek, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }, volumes: [ "pgdata:/var/lib/postgresql/data" ] }
+  # redis:   { image: redis:7 }
+  # storage: { image: minio/minio, command: server /data, volumes: [ "miniodata:/data" ] }
+
+volumes:
+  workerdata: {}
+  # pgdata: {}
+  # miniodata: {}
