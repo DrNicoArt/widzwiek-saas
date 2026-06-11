@@ -81,3 +81,15 @@ export function heuristicTurns(doc: CaptionDocument): CaptionDocument {
   const cues = doc.cues.map((c) => (c.kind === "speech" ? { ...c, speaker_id: map.get(c.id) === 1 ? "S2" : "S1" } : c));
   return { ...doc, speakers, cues };
 }
+
+
+// Gwarancja: po transkrypcji bez diaryzacji zawsze jest co najmniej jeden mowca ("Mówca 1"),
+// a wszystkie wypowiedzi sa do niego przypisane. Inaczej edytor pokazuje "(bez mowcy)".
+export function ensureDefaultSpeaker(doc: CaptionDocument): CaptionDocument {
+  if (doc.speakers.length > 0) return doc;
+  const hasSpeech = doc.cues.some((c) => c.kind === "speech");
+  if (!hasSpeech) return doc;
+  const sp: Speaker = { id: "S1", label: "Mówca 1", color: PALETTE[0] };
+  const cues = doc.cues.map((c) => (c.kind === "speech" && !c.speaker_id ? { ...c, speaker_id: "S1" } : c));
+  return { ...doc, speakers: [sp], cues };
+}

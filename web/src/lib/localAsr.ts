@@ -3,7 +3,7 @@
 // Audio dekodowane do 16 kHz mono. Dźwięki niewerbalne: AST/AudioSet (real), fallback do heurystyki.
 import type { CaptionDocument, Cue } from "./contract";
 import { finalizeDoc } from "./wcagClient";
-import { heuristicTurns } from "./enrich";
+import { heuristicTurns, ensureDefaultSpeaker } from "./enrich";
 import { analyzeSounds } from "./soundScan";
 import { detectSounds } from "./localSound";
 import { loadTransformers, decodeTo16kMono } from "./transformersClient";
@@ -100,5 +100,5 @@ export async function transcribeLocally(file: File, onProgress?: ProgressFn): Pr
     },
   };
   onProgress?.({ pct: 100, label: "Gotowe." });
-  return finalizeDoc(heuristicTurns(doc));
+  return finalizeDoc(ensureDefaultSpeaker(heuristicTurns(doc)));
 }

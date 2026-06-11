@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createJob, getJob, importJob, IS_STATIC_DEMO } from "@/lib/api";
+import { createJob, getJob, importJob, listJobs, IS_STATIC_DEMO } from "@/lib/api";
 import type { Job } from "@/lib/contract";
 import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
 import { DEMO_DOC } from "@/lib/demoDoc";
@@ -31,7 +31,7 @@ import TranscriptTable from "@/components/result/TranscriptTable";
 import CaptionsTable from "@/components/result/CaptionsTable";
 import SpeakersSounds from "@/components/result/SpeakersSounds";
 import ProjectCard from "@/components/dashboard/ProjectCard";
-import { DEMO_PROJECTS } from "@/lib/mockData";
+import { DEMO_PROJECTS, type DemoProject } from "@/lib/mockData";
 import { fadeUp } from "@/lib/motion";
 
 type Phase = "idle" | "uploading" | "processing" | "done" | "error";
@@ -70,6 +70,18 @@ function UsageEstimate({ durationMs }: { durationMs: number }) {
   );
 }
 
+function jobToCard(j: Job): DemoProject {
+  const w = j.result?.wcag;
+  const score = w ? Math.max(0, 100 - w.stats.error_count * 15 - w.stats.warning_count * 4) : 0;
+  const t = j.result ? Math.round(j.result.media.duration_ms / 1000) : 0;
+  return {
+    id: j.id, title: j.filename || "Materiał",
+    durationLabel: j.result ? `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}` : "—",
+    status: j.result ? (w?.compliant ? "done" : "review") : "processing",
+    wcag: score, updated: "Twój materiał", accent: "#0057A8",
+  };
+}
+
 function StudioInner() {
   const workerUp = useWorkerUp();
   const params = useSearchParams();
@@ -88,6 +100,7 @@ function StudioInner() {
   const [localProg, setLocalProg] = useState<LocalProgress | null>(null);
   const [asrModel, setAsrModelState] = useState<string>("");
   const [engineMode, setEngineModeState] = useState<EngineMode>("auto");
+  const [myJobs, setMyJobs] = useState<Job[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
   const pick = () => inputRef.current?.click();
@@ -125,7 +138,7 @@ function StudioInner() {
 
   // wejście z ?sample=1 (np. z banera offline / dashboardu)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setHasKey(!!getUserAsr()); setAsrModelState(getAsrModel()); setEngineModeState(getEngineMode()); if (params.get("sample") === "1") runSample(); }, []);
+  useEffect(() => { setHasKey(!!getUserAsr()); setAsrModelState(getAsrModel()); setEngineModeState(getEngineMode()); listJobs().then(setMyJobs).catch(() => {}); if (params.get("sample") === "1") runSample(); }, []);
 
   async function runCloud(f: File) {
     setError(null); setSample(false); setPhase("processing");
@@ -209,7 +222,7 @@ function StudioInner() {
                 <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Uruchom demo na przykładzie</Button>
               </div>
             )}
-            <details className="mt-3 rounded-xl border border-hair/70 bg-white/50">
+            <details open className="mt-3 rounded-xl border border-hair/70 bg-white/50">
               <summary className="focusring cursor-pointer list-none px-4 py-2.5 text-sm font-medium text-graphite">Inne sposoby dodania materiału — link albo import SRT/VTT</summary>
               <div className="px-3 pb-3">
             <div className="mt-1 rounded-xl border border-hair/70 bg-white/60 px-4 py-3">
@@ -316,6 +329,12 @@ function StudioInner() {
                 <h3 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="folder" size={16} className="text-brand-600" /> Twoje materiały</h3>
                 <Link href="/app/projekty" className="text-xs font-medium text-brand-700 hover:underline">Wszystkie →</Link>
               </div>
+              {myJobs.length > 0 && (
+                <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {myJobs.map((j) => <ProjectCard key={j.id} p={jobToCard(j)} />)}
+                </div>
+              )}
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">{myJobs.length > 0 ? "Przykłady" : ""}</p>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {DEMO_PROJECTS.map((pr) => <ProjectCard key={pr.id} p={pr} />)}
               </div>

@@ -4,7 +4,7 @@
 // CaptionDocument -> klientowy silnik WCAG. Klucz nie opuszcza urządzenia poza wywołaniem do dostawcy.
 import type { CaptionDocument, Cue } from "./contract";
 import { finalizeDoc } from "./wcagClient";
-import { heuristicTurns } from "./enrich";
+import { heuristicTurns, ensureDefaultSpeaker } from "./enrich";
 import { analyzeSounds } from "./soundScan";
 
 export type AsrProvider = "openai" | "elevenlabs" | "deepgram";
@@ -117,5 +117,5 @@ export async function transcribeWithProvider(file: File, choice: AsrChoice): Pro
     wcag: { target: "WCAG 2.1 AA", compliant: false, generated_at: new Date().toISOString(), stats: { cue_count: cues.length, error_count: 0, warning_count: 0 }, issues: [] },
     meta: { generated_at: new Date().toISOString(), pipeline: { asr: choice.provider, diarization: "none", sound_events: soundProvider }, decision: { strategy: "automatic", transcript_source: "cloud-asr", no_api_first: false, fallback_used: false, fallbacks: [], notes: [`Transkrypcja w przeglądarce (${choice.provider}), klucz użytkownika.`] } },
   };
-  return finalizeDoc(heuristicTurns(doc));
+  return finalizeDoc(ensureDefaultSpeaker(heuristicTurns(doc)));
 }

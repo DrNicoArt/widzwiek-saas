@@ -94,6 +94,7 @@ export interface CaptionDocument {
 }
 
 export interface Job {
+  org_id?: string;
   id: string;
   status: JobStatusValue;
   created_at: string;

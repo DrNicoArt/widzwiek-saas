@@ -40,6 +40,21 @@ export interface ConfigUpdate {
 
 let staticJob: Job | null = null;
 
+// Biblioteka materialow w trybie demo (bez workera): trwala w localStorage przegladarki.
+const LS_KEY = "widzwiek.jobs";
+function lsJobs(): Job[] {
+  try { return JSON.parse((typeof window !== "undefined" && window.localStorage.getItem(LS_KEY)) || "[]"); } catch { return []; }
+}
+function lsSave(jobs: Job[]): void {
+  try { if (typeof window !== "undefined") window.localStorage.setItem(LS_KEY, JSON.stringify(jobs.slice(0, 60))); } catch { /* ignore */ }
+}
+function lsUpsert(job: Job): void {
+  const all = lsJobs().filter((j) => j.id !== job.id);
+  all.unshift(job);
+  lsSave(all);
+}
+function newId(): string { return Math.random().toString(36).slice(2, 10); }
+
 function staticHealth(): HealthInfo {
   return {
     status: "ok",
@@ -78,7 +93,11 @@ export async function createJob(file: File): Promise<Job> {
 }
 
 export async function getJob(id: string): Promise<Job> {
-  if (IS_STATIC_DEMO) return staticJob ?? makeStaticJob();
+  if (IS_STATIC_DEMO) {
+    const found = lsJobs().find((j) => j.id === id);
+    if (found) return found;
+    return staticJob && staticJob.id === id ? staticJob : makeStaticJob();
+  }
   const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się pobrać joba ${id} (${res.status}).`);
   return res.json();
@@ -109,20 +128,25 @@ export async function getStorage(): Promise<StorageInfo | null> {
 }
 
 export async function listJobs(): Promise<Job[]> {
-  if (IS_STATIC_DEMO) return [];
+  if (IS_STATIC_DEMO) return lsJobs();
   const res = await fetch(`${WORKER_URL}/api/jobs`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się pobrać listy materiałów (${res.status}).`);
   return res.json();
 }
 
 export async function deleteJob(id: string): Promise<void> {
-  if (IS_STATIC_DEMO) return;
+  if (IS_STATIC_DEMO) { lsSave(lsJobs().filter((j) => j.id !== id)); return; }
   const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się usunąć materiału (${res.status}).`);
 }
 
 export async function importJob(filename: string, document: CaptionDocument): Promise<Job> {
-  if (IS_STATIC_DEMO) return makeStaticJob(filename, document);
+  if (IS_STATIC_DEMO) {
+    const now = new Date().toISOString();
+    const job: Job = { id: newId(), org_id: "demo", status: "done" as Job["status"], filename, created_at: now, updated_at: now, result: finalizeDoc(document) };
+    lsUpsert(job);
+    return job;
+  }
   const res = await fetch(`${WORKER_URL}/api/jobs/import`, {
     method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ filename, document }),
@@ -135,7 +159,19 @@ export async function importJob(filename: string, document: CaptionDocument): Pr
 }
 
 export async function updateDocument(id: string, doc: CaptionDocument): Promise<Job> {
-  if (IS_STATIC_DEMO) return makeStaticJob(staticJob?.filename ?? "material-demo", doc);
+  if (IS_STATIC_DEMO) {
+    const all = lsJobs();
+    const ex = all.find((j) => j.id === id);
+    const now = new Date().toISOString();
+    const job: Job = {
+      id, org_id: "demo", status: "done" as Job["status"],
+      filename: ex?.filename ?? "material-demo",
+      created_at: ex?.created_at ?? now, updated_at: now,
+      result: finalizeDoc(doc),
+    };
+    lsUpsert(job);
+    return job;
+  }
   const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
