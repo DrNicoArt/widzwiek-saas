@@ -7,6 +7,7 @@ services:
       PIPELINE_MODE: ${PIPELINE_MODE:-auto}        # auto = faster-whisper (lokalnie, bez API)
       WIDZWIEK_CORS_ORIGINS: ${WIDZWIEK_CORS_ORIGINS:-http://localhost:3000}
       WIDZWIEK_ADMIN_TOKEN: ${WIDZWIEK_ADMIN_TOKEN:-}
+      WIDZWIEK_ASYNC: ${WIDZWIEK_ASYNC:-1}        # 1 = przetwarzanie w tle (dlugie pliki nie blokuja)
     volumes:
       - workerdata:/data         # joby (storage) + modele Whisper (cache)
     ports:
