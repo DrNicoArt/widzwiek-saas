@@ -161,10 +161,9 @@ function StudioInner() {
     if (!file) return;
     // Klucz usera -> realna transkrypcja w przeglądarce (działa też na statycznym demo).
     if (getUserAsr()) { await runCloud(file); return; }
-    if (IS_STATIC_DEMO) {
-      runSample();
-      return;
-    }
+    // Demo (Vercel, bez workera): przetwórz REALNIE wybrany plik w przeglądarce (Whisper),
+    // a nie podstawiaj przykładu. Przykład jest pod osobnym przyciskiem „Uruchom demo".
+    if (IS_STATIC_DEMO) { await runLocal(file); return; }
     setError(null); setJob(null); setSample(false); setPhase("uploading");
     try {
       const created = await createJob(file);
