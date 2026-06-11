@@ -35,7 +35,7 @@ docker compose up -d --build worker
 - ✅ Transkrypcja: faster-whisper w kontenerze (CPU; GPU opcjonalnie szybsze).
 - ✅ WCAG: pełna walidacja + eksport SRT/VTT/TXT/JSON.
 - 🟡 Dźwięki niewerbalne: pełny model (inaSpeechSegmenter/AST) jest opcjonalny i ciężki — domyślnie best-effort; w przeglądarce działa AST. Do dołożenia w obrazie jako opcja.
-- 🔴 **Przetwarzanie jest synchroniczne** (`POST /api/jobs` liczy w trakcie requestu). Dla krótkich plików OK; dla długich nagrań potrzebna **kolejka + worker tła** — to następny krok (S4 / Krok 3 scaffold: `services/common/queue.py` + `infra/db`). Do tego czasu trzymaj limit długości pliku i `uvicorn --workers N`.
+- 🟡 **Przetwarzanie w tle (S4):** ustaw `WIDZWIEK_ASYNC=1` (domyślne w compose) — `POST /api/jobs` wraca natychmiast, job liczy się w wątku tła, frontend odpytuje status. To wystarcza na jednym kontenerze dla umiarkowanego ruchu. Dla pełnej skali (wiele instancji, retry, równoległość) docelowo kolejka zewnętrzna (Redis/SQS) — `services/common/queue.py` + `infra/db` (Krok 3). Uruchamiaj `uvicorn --workers N` wg rdzeni.
 
 ## Następne (konta / płatności / skala)
 Schemat bazy (`infra/db/0001_init.sql`), auth/hardening (`docs/AUTH_AND_SECURITY.md`), billing (`services/common/billing.py`) są gotowe jako fundament. Kolejność: kolejka (S4) → DB+tenancy → auth → billing. Patrz `docs/PLATFORM_AUDIT.md` i `docs/QUALITY_THESIS.md`.

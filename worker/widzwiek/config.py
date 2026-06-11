@@ -40,6 +40,7 @@ class Settings:
     enable_sound_events: bool = os.getenv("WIDZWIEK_ENABLE_SOUND_EVENTS", "1") != "0"
 
     admin_token: str = os.getenv("WIDZWIEK_ADMIN_TOKEN", "")  # gdy ustawiony: /api/config wymaga naglowka X-Admin-Token
+    async_jobs: bool = os.getenv("WIDZWIEK_ASYNC", "0") == "1"  # 1 = przetwarzanie w tle (dlugie pliki nie blokuja)
     storage_dir: str = os.getenv("WIDZWIEK_STORAGE_DIR", "./storage")
     storage_limit_mb: int = int(os.getenv("WIDZWIEK_STORAGE_LIMIT_MB", "200"))
 

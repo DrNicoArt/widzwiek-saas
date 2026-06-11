@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import threading
 from typing import Optional
 
 from fastapi import FastAPI, File, Header, HTTPException, UploadFile
@@ -16,7 +17,7 @@ from pydantic import BaseModel
 
 from .api_check import readiness
 from .config import settings
-from .contracts import CaptionDocument, Job
+from .contracts import CaptionDocument, Job, JobStatus
 from .export import to_srt, to_txt, to_vtt
 from .jobs import store
 from .pipeline.orchestrator import registry_snapshot
@@ -138,13 +139,23 @@ async def create_job(file: UploadFile = File(...)) -> Job:
     except Exception:  # noqa: BLE001
         audio_path = None
 
-    store.process(job, audio_path)
-
-    if audio_path:
+    def _run_and_cleanup() -> None:
         try:
-            os.unlink(audio_path)
-        except OSError:
-            pass
+            store.process(job, audio_path)
+        finally:
+            if audio_path:
+                try:
+                    os.unlink(audio_path)
+                except OSError:
+                    pass
+
+    if settings.async_jobs:
+        # Tryb serwerowy: przetwarzanie w tle, request wraca natychmiast (frontend odpytuje status).
+        job.status = JobStatus.processing
+        threading.Thread(target=_run_and_cleanup, daemon=True).start()
+        return job
+
+    _run_and_cleanup()
     return job
 
 
