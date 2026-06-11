@@ -21,6 +21,7 @@ from .config import settings
 from .contracts import CaptionDocument, Job, JobStatus
 from .export import to_srt, to_txt, to_vtt
 from .jobs import store
+from . import usage
 from .pipeline.orchestrator import registry_snapshot
 from .pipeline.providers import select_providers
 
@@ -175,6 +176,12 @@ def _require_done(job_id: str, org: str) -> Job:
     if not job.result:
         raise HTTPException(status_code=409, detail=f"Job nie jest gotowy (status: {job.status}).")
     return job
+
+
+@app.get("/api/usage")
+def usage_summary(org: str = Depends(current_org)) -> dict:
+    """Zuzycie organizacji (minuty zgodnosci WCAG, kredyty). Fundament billingu."""
+    return usage.summary(org)
 
 
 @app.get("/api/storage")

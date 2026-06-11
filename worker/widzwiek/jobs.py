@@ -15,6 +15,7 @@ from .pipeline import formatter, run_pipeline
 from .pipeline.runner import run_pipeline_from_segments
 from .pipeline.url_ingest import ingest_url_captions
 from .wcag import validate
+from . import usage
 
 
 def normalize_document(doc: CaptionDocument) -> CaptionDocument:
@@ -91,6 +92,7 @@ class JobStore:
             job.result = doc
             self._touch(job, JobStatus.done)
             self._persist(job)
+            usage.record(job.org_id, job.id, doc)
         except Exception as exc:  # noqa: BLE001
             job.error = str(exc)
             self._touch(job, JobStatus.error)
@@ -112,6 +114,7 @@ class JobStore:
             job.result = doc
             self._touch(job, JobStatus.done)
             self._persist(job)
+            usage.record(job.org_id, job.id, doc)
         except Exception as exc:  # noqa: BLE001
             job.error = str(exc)
             self._touch(job, JobStatus.error)
