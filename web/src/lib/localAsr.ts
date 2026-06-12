@@ -18,26 +18,37 @@ interface Seg { start: number; end: number; text: string } // ms
 const _pipes: Record<string, any> = {};
 
 // eslint-disable-next-line
+export function hasWebGPU(): boolean {
+  // eslint-disable-next-line
+  return typeof navigator !== "undefined" && !!(navigator as any).gpu;
+}
+
 async function loadPipeline(model: string, onProgress?: ProgressFn): Promise<any> {
   if (_pipes[model]) return _pipes[model];
   const mod = await loadTransformers();
-  _pipes[model] = await mod.pipeline("automatic-speech-recognition", model, {
-    // eslint-disable-next-line
-    progress_callback: (p: any) => {
-      if (!onProgress) return;
-      if (p?.status === "progress" && typeof p.progress === "number") {
-        onProgress({ pct: Math.round(p.progress), label: `Pobieranie modelu (${p.file ?? "Whisper"})…` });
-      } else if (p?.status === "ready") {
-        onProgress({ pct: 100, label: "Model gotowy." });
-      }
-    },
-  });
+  // eslint-disable-next-line
+  const progress_callback = (p: any) => {
+    if (!onProgress) return;
+    if (p?.status === "progress" && typeof p.progress === "number") {
+      onProgress({ pct: Math.round(p.progress), label: `Pobieranie modelu (${p.file ?? "Whisper"})…` });
+    } else if (p?.status === "ready") {
+      onProgress({ pct: 100, label: "Model gotowy." });
+    }
+  };
+  // GPU (WebGPU) + fp16 = szybciej i lepiej (nieskwantyzowane). Fallback: CPU/WASM (jak dotychczas).
+  if (hasWebGPU()) {
+    try {
+      _pipes[model] = await mod.pipeline("automatic-speech-recognition", model, { device: "webgpu", dtype: "fp16", progress_callback });
+      return _pipes[model];
+    } catch { /* brak wsparcia/za malo pamieci -> CPU */ }
+  }
+  _pipes[model] = await mod.pipeline("automatic-speech-recognition", model, { progress_callback });
   return _pipes[model];
 }
 
 export async function transcribeLocally(file: File, onProgress?: ProgressFn): Promise<CaptionDocument> {
   const model = getAsrModel();
-  onProgress?.({ pct: 0, label: "Ładowanie silnika transkrypcji w przeglądarce…" });
+  onProgress?.({ pct: 0, label: hasWebGPU() ? "Ładowanie silnika (GPU/WebGPU)…" : "Ładowanie silnika (CPU)…" });
   const transcriber = await loadPipeline(model, onProgress);
 
   onProgress?.({ pct: 100, label: "Dekodowanie audio…" });

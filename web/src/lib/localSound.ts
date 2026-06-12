@@ -36,7 +36,14 @@ function toPl(label: string): string | null {
 
 export async function detectSounds(file: File): Promise<Cue[]> {
   const mod = await loadTransformers();
-  const classifier = await mod.pipeline("audio-classification", SOUND_MODEL);
+  // eslint-disable-next-line
+  let classifier: any;
+  // eslint-disable-next-line
+  const hasGpu = typeof navigator !== "undefined" && !!(navigator as any).gpu;
+  if (hasGpu) {
+    try { classifier = await mod.pipeline("audio-classification", SOUND_MODEL, { device: "webgpu", dtype: "fp16" }); } catch { classifier = null; }
+  }
+  if (!classifier) classifier = await mod.pipeline("audio-classification", SOUND_MODEL);
   const audio = await decodeTo16kMono(file);
   const win = SAMPLE_RATE * 3; // okno 3 s
   const cues: Cue[] = [];
