@@ -10,8 +10,7 @@ import Button from "@/components/ui/Button";
 import Icon, { type IconName } from "@/components/ui/Icon";
 import { fadeUp } from "@/lib/motion";
 import { getHealth, setConfig, type HealthInfo } from "@/lib/api";
-import { ASR_PROVIDERS, type AsrProvider } from "@/lib/cloudAsr";
-import { getUserAsr, setUserAsr } from "@/lib/userKey";
+import { ENGINE_MODES, getEngineMode, setEngineMode, type EngineMode } from "@/lib/engineMode";
 import {
   DEFAULT_POLICY,
   ORCHESTRATOR_STATUS,
@@ -33,7 +32,7 @@ const SECTIONS: { id: SectionId; label: string; icon: IconName }[] = [
   { id: "ogolne", label: "Ogólne", icon: "settings" },
   { id: "strategia", label: "Strategia", icon: "sparkles" },
   { id: "zrodla", label: "Źródła transkryptu", icon: "captions" },
-  { id: "ai", label: "Dostawcy AI", icon: "mic" },
+  { id: "ai", label: "Silnik AI", icon: "mic" },
   { id: "dzwieki", label: "Dźwięki niewerbalne", icon: "wave" },
   { id: "format", label: "Format napisów", icon: "file" },
   { id: "platnosci", label: "Plan i płatności", icon: "card" },
@@ -102,10 +101,7 @@ function UstawieniaInner() {
   const [proposeSounds, setProposeSounds] = useState(DEFAULT_POLICY.proposeSoundsBeforeExport);
   const [requireSounds, setRequireSounds] = useState(DEFAULT_POLICY.requireSoundDescriptions);
   const [msg, setMsg] = useState<{ tone: Tone; text: string } | null>(null);
-  const [userProvider, setUserProvider] = useState<AsrProvider>("openai");
-  const [userKeyInput, setUserKeyInput] = useState("");
-  const [keySaved, setKeySaved] = useState(false);
-  const [hasUserKey, setHasUserKey] = useState(false);
+  const [engineMode, setEngineModeState] = useState<EngineMode>("auto");
 
   const activeStrategy = useMemo(() => STRATEGIES.find((s) => s.id === strategy) ?? STRATEGIES[0], [strategy]);
 
@@ -119,9 +115,7 @@ function UstawieniaInner() {
     }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => { const a = getUserAsr(); if (a) { setUserProvider(a.provider); setHasUserKey(true); } }, []);
-  function saveUserKey() { setUserAsr({ provider: userProvider, key: userKeyInput }); setHasUserKey(!!userKeyInput.trim()); setKeySaved(true); setUserKeyInput(""); }
-  function clearUserKey() { setUserAsr(null); setHasUserKey(false); setKeySaved(false); }
+  useEffect(() => { setEngineModeState(getEngineMode()); }, []);
 
   async function saveRuntimeConfig() {
     setSaving(true); setMsg(null);
@@ -249,31 +243,25 @@ function UstawieniaInner() {
 
           {section === "ai" && (
             <div className="space-y-4">
-              <Card title="Transkrybuj własne pliki" desc="Wklej klucz dowolnego obsługiwanego dostawcy. Transkrypcja zrobi się w Twojej przeglądarce — klucz zostaje na Twoim urządzeniu i nie trafia na nasz serwer.">
-                <div className="grid gap-3">
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted">Skąd jest klucz</span>
-                    <select value={userProvider} onChange={(e) => setUserProvider(e.target.value as AsrProvider)}
-                      className="focusring rounded-xl border border-hair bg-white px-3 py-2.5 text-sm text-graphite">
-                      {ASR_PROVIDERS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-                    </select>
-                  </label>
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted">Klucz API</span>
-                    <input type="password" value={userKeyInput} onChange={(e) => setUserKeyInput(e.target.value)}
-                      placeholder={hasUserKey ? "klucz zapisany — wpisz nowy, aby podmienić" : (ASR_PROVIDERS.find((p) => p.id === userProvider)?.keyHint ?? "")}
-                      autoComplete="off" spellCheck={false}
-                      className="focusring w-full rounded-xl border border-hair bg-white px-3 py-2.5 font-mono text-sm text-graphite placeholder:text-muted/70" />
-                  </label>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button onClick={saveUserKey} icon="check">Zapisz klucz</Button>
-                    {hasUserKey && <Button variant="secondary" icon="x" onClick={clearUserKey}>Usuń klucz</Button>}
-                    {keySaved && <span className="inline-flex items-center gap-1 text-xs text-ok"><Icon name="checkCircle" size={14} /> Zapisano w przeglądarce</span>}
-                  </div>
-                  <p className="text-xs text-muted">Klucz nie jest wymagany. Bez niego zaimportujesz gotowe napisy (SRT/VTT) albo użyjesz materiału demonstracyjnego — silnik WCAG działa tak czy inaczej.</p>
+              <Card title="Silnik AI — model i orientacyjny cennik" desc="Nie podajesz żadnego klucza API. Wybierasz tryb/model — to wpływa na jakość, szybkość i cenę. Pod spodem Widźwięk sam dobiera dostawcę i rozlicza minuty zgodności WCAG.">
+                <div className="grid gap-2">
+                  {ENGINE_MODES.map((m) => (
+                    <button key={m.id} type="button" onClick={() => { setEngineMode(m.id); setEngineModeState(m.id); }}
+                      className={`focusring flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${engineMode === m.id ? "border-brand-500 bg-brand-50" : "border-hair bg-white hover:bg-slate-50"}`}>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-graphite">{m.label}</span>
+                        <span className="block text-xs text-muted">{m.desc}</span>
+                      </span>
+                      <span className="shrink-0 text-right">
+                        <span className="block text-sm font-medium tabular-nums text-graphite">{m.price}</span>
+                        <span className="block text-[11px] text-muted">orientacyjnie / min</span>
+                      </span>
+                    </button>
+                  ))}
                 </div>
+                <p className="mt-3 text-xs text-muted">Ceny orientacyjne (TBD) — finalne stawki ustalimy przy uruchomieniu rozliczeń. Rozliczamy „minuty zgodności WCAG”, nie dostawcę. Pole klucza API zostaje wyłącznie dla firm/developerów w trybie zaawansowanym.</p>
               </Card>
-              <Card title="Dostawca transkrypcji" desc="OpenAI jest pierwszym live providerem, ale Widźwięk jest provider-agnostic.">
+              <Card title="Jak dobieramy dostawcę" desc="Klient nie wybiera providera — Widźwięk dobiera go sam pod materiał i tryb.">
                 <div className="rounded-xl border border-ok/30 bg-ok/5 p-4">
                   <p className="text-sm font-medium text-graphite">Orkiestrator wybiera provider dopiero po sprawdzeniu źródła transkryptu.</p>
                   <p className="mt-1 text-xs text-muted">Dzięki temu import napisów, auto captions i gotowe transkrypty mogą obniżać koszt bez ręcznej decyzji użytkownika.</p>

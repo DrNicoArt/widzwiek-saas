@@ -284,11 +284,7 @@ function StudioInner() {
                 ))}
               </div>
               {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> albo uruchom worker w środowisku dev.</span>}
-              {hasKey ? (
-                <span className="inline-flex items-center gap-1.5 text-xs text-ok"><Icon name="checkCircle" size={14} /> Klucz dostawcy wykryty — plik zostanie przetranskrybowany w Twojej przeglądarce.</span>
-              ) : (
-                <span className="text-xs text-muted">Masz własny klucz (OpenAI / ElevenLabs / Deepgram)? <Link href="/app/ustawienia" className="font-medium text-brand-700 underline">Dodaj go w Ustawieniach</Link>, aby transkrybować własne pliki.</span>
-              )}
+              <span className="text-xs text-muted">Transkrypcja liczy się w Twojej przeglądarce — plik nie opuszcza urządzenia. Model i orientacyjny cennik ustawisz w <Link href="/app/ustawienia" className="font-medium text-brand-700 underline">Ustawieniach → Silnik AI</Link>.</span>
             </div>
             {localProg && (
               <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">

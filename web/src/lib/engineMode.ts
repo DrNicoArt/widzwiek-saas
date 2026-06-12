@@ -5,13 +5,13 @@ import { setAsrModel } from "./asrModel";
 
 export type EngineMode = "auto" | "quality" | "cheap" | "fast";
 
-export interface EngineModeOpt { id: EngineMode; label: string; desc: string; model: string }
+export interface EngineModeOpt { id: EngineMode; label: string; desc: string; model: string; price: string }
 
 export const ENGINE_MODES: EngineModeOpt[] = [
-  { id: "auto",    label: "Automatyczny",      desc: "Zalecane — najlepsza wartość", model: "Xenova/whisper-base" },
-  { id: "quality", label: "Maksymalna jakość", desc: "Najlepszy wynik, wolniej",     model: "Xenova/whisper-small" },
-  { id: "cheap",   label: "Najniższy koszt",   desc: "Lekko i tanio",                model: "Xenova/whisper-tiny" },
-  { id: "fast",    label: "Najszybsze",        desc: "Najkrótszy czas",              model: "Xenova/whisper-tiny" },
+  { id: "auto",    label: "Automatyczny",      desc: "Zalecane — najlepsza wartość", model: "Xenova/whisper-base",  price: "0,40–0,60 zł" },
+  { id: "quality", label: "Maksymalna jakość", desc: "Najlepszy wynik, wolniej",     model: "Xenova/whisper-small", price: "0,90–1,40 zł" },
+  { id: "cheap",   label: "Najniższy koszt",   desc: "Lekko i tanio",                model: "Xenova/whisper-tiny",  price: "0,15–0,25 zł" },
+  { id: "fast",    label: "Najszybsze",        desc: "Najkrótszy czas",              model: "Xenova/whisper-tiny",  price: "0,15–0,25 zł" },
 ];
 
 const KEY = "widzwiek.engine_mode";
