@@ -15,10 +15,8 @@ import {
   DEFAULT_POLICY,
   OTHER_PROVIDER_GROUPS,
   SOUND_EVENT_PROVIDERS,
-  STRATEGIES,
   TRANSCRIPT_SOURCE_PROVIDERS,
   TRANSCRIPTION_PROVIDERS,
-  type OrchestrationStrategy,
   type ProviderCapabilityProfile,
   type ProviderStatus,
   statusLabel,
@@ -89,7 +87,6 @@ function UstawieniaInner() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState<Mode>("mock");
-  const [strategy, setStrategy] = useState<OrchestrationStrategy>(DEFAULT_POLICY.strategy);
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("whisper-1");
   const [showKey, setShowKey] = useState(false);
@@ -100,7 +97,6 @@ function UstawieniaInner() {
   const [msg, setMsg] = useState<{ tone: Tone; text: string } | null>(null);
   const [engineMode, setEngineModeState] = useState<EngineMode>("auto");
 
-  const activeStrategy = useMemo(() => STRATEGIES.find((s) => s.id === strategy) ?? STRATEGIES[0], [strategy]);
 
   const refresh = useCallback(async () => {
     const h = await getHealth();
@@ -203,26 +199,6 @@ function UstawieniaInner() {
                   ))}
                 </div>
                 <p className="mt-3 text-xs text-muted">Ceny orientacyjne (TBD) — finalne stawki ustalimy przy uruchomieniu rozliczeń. Rozliczamy „minuty zgodności WCAG”, nie dostawcę. Pole klucza API zostaje wyłącznie dla firm/developerów w trybie zaawansowanym.</p>
-              </Card>
-              <Card title="Strategia przetwarzania" desc="Wybierasz cel (jakość/koszt/szybkość). Orkiestrator sam dobiera źródło transkryptu i dostawców — bez ręcznego wyboru providerów.">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {STRATEGIES.map((s) => {
-                    const active = strategy === s.id;
-                    return (
-                      <button key={s.id} type="button" onClick={() => setStrategy(s.id)}
-                        className={`focusring rounded-xl border p-3 text-left transition-colors ${active ? "border-brand-400 bg-brand-50 text-brand-700" : "border-hair bg-white text-graphite hover:border-brand-200 hover:bg-brand-50/50"}`}>
-                        <span className="block text-sm font-medium">{s.label}</span>
-                        <span className="mt-0.5 block text-xs text-muted">{s.short}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/60 p-4">
-                  <p className="text-sm font-medium text-graphite">{activeStrategy.label}: {activeStrategy.description}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {activeStrategy.priorities.map((p) => <span key={p} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-brand-700 ring-1 ring-brand-100">{p}</span>)}
-                  </div>
-                </div>
               </Card>
               <Card title="Źródła transkryptu i napisów" desc="Ważniejsze niż sam ASR: najtańsza ścieżka często zaczyna się od gotowych napisów. Orkiestrator sprawdza źródła w tej kolejności — nie wybierasz dostawców ręcznie.">
                 <details className="rounded-xl border border-hair/60 bg-white px-3 py-2.5">
