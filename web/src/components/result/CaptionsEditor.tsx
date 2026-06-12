@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import type { CaptionDocument, CaptionStyle, CueKind, Speaker } from "@/lib/contract";
 import { DEFAULT_STYLE, FONTS, SIZE_PRESETS, fontCss, contrastRatio, msToTimecode } from "@/lib/contract";
-import { updateDocument } from "@/lib/api";
+import { updateDocument, IS_STATIC_DEMO } from "@/lib/api";
 import { autoFix } from "@/lib/autofix";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
@@ -144,6 +144,25 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
     } catch (e) { setMsg({ tone: "err", text: e instanceof Error ? e.message : "Nie udało się zapisać." }); }
     finally { setSaving(false); }
   }, [doc, jobId, onSaved, rows, speakers, style]);
+
+  // Autozapis (tryb demo): edycje trafiaja do localStorage ~0.9 s po zmianie, bez klikania
+  // przycisku. Dzieki temu wyjscie z projektu nie gubi poprawek transkrypcji.
+  useEffect(() => {
+    if (!IS_STATIC_DEMO) return;
+    if (savedKey === null || savedKey === stateKey) return; // brak niezapisanych zmian
+    const t = setTimeout(async () => {
+      try {
+        const next: CaptionDocument = {
+          ...doc, speakers, style,
+          cues: rows.map((r, i) => { const speech = r.kind === "speech"; const text = r.tokens && r.tokens.length ? r.tokens.map((tk) => tk.text).join(" ") : r.text; return { id: r.id, index: i + 1, start_ms: Math.round(r.start_ms), end_ms: Math.round(r.end_ms), kind: r.kind, speaker_id: speech ? r.speaker_id : null, text, lines: [text], tokens: speech ? r.tokens ?? undefined : undefined }; }),
+        };
+        await updateDocument(jobId, next);
+        setSavedKey(stateKey);
+        setMsg({ tone: "ok", text: "Zapisano automatycznie (w tej przeglądarce)." });
+      } catch { /* cichy autozapis */ }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [stateKey, savedKey, doc, jobId, rows, speakers, style]);
 
   const fixAll = useCallback(async () => {
     snapshot();
