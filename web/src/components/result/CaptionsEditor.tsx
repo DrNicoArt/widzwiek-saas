@@ -2,7 +2,7 @@
 // Edytor napisow prowadzony przez WCAG (offline): sticky pasek akcji + status zapisu, panel Problemow
 // z linkami do cue, nawigacja aktywnego cue, presety stylu, mowcy (pelna paleta + kontrast),
 // dzwieki (wykryte vs do dodania), styl per-slowo, undo/redo. Zapis -> worker normalizuje + waliduje.
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { CaptionDocument, CaptionStyle, CueKind, Speaker } from "@/lib/contract";
 import { DEFAULT_STYLE, FONTS, SIZE_PRESETS, fontCss, contrastRatio, msToTimecode } from "@/lib/contract";
@@ -79,6 +79,23 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const dirty = savedKey !== null && savedKey !== stateKey;
+
+  // FLUSH przy wyjsciu z edytora: jesli sa niezapisane zmiany, zapisz je do localStorage zanim
+  // komponent zniknie (np. powrot do Studia). Statyczna galaz updateDocument jest synchroniczna
+  // wewnetrznie (finalizeDoc + zapis LS), wiec write wykona sie przed odmontowaniem.
+  const flushRef = useRef<() => void>(() => {});
+  flushRef.current = () => {
+    if (!IS_STATIC_DEMO) return;
+    if (savedKey === null || savedKey === stateKey) return;
+    try {
+      const next: CaptionDocument = {
+        ...doc, speakers, style,
+        cues: rows.map((r, i) => { const speech = r.kind === "speech"; const text = r.tokens && r.tokens.length ? r.tokens.map((tk) => tk.text).join(" ") : r.text; return { id: r.id, index: i + 1, start_ms: Math.round(r.start_ms), end_ms: Math.round(r.end_ms), kind: r.kind, speaker_id: speech ? r.speaker_id : null, text, lines: [text], tokens: speech ? r.tokens ?? undefined : undefined }; }),
+      };
+      void updateDocument(jobId, next);
+    } catch { /* flush best-effort */ }
+  };
+  useEffect(() => () => { flushRef.current(); }, []);
 
   const current = rows[Math.min(sel, rows.length - 1)] ?? null;
   const issueByCue = useMemo(() => {
