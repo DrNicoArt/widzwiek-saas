@@ -23,13 +23,12 @@ import {
 } from "@/lib/orchestration";
 
 type Mode = "mock" | "api";
-type SectionId = "ogolne" | "strategia" | "zrodla" | "ai" | "dzwieki" | "format" | "platnosci" | "bezpieczenstwo" | "developer";
+type SectionId = "ogolne" | "strategia" | "zrodla" | "ai" | "dzwieki" | "platnosci" | "bezpieczenstwo" | "developer";
 
 const SECTIONS: { id: SectionId; label: string; icon: IconName }[] = [
   { id: "ogolne", label: "Ogólne", icon: "settings" },
   { id: "ai", label: "Silnik AI", icon: "mic" },
   { id: "dzwieki", label: "Dźwięki niewerbalne", icon: "wave" },
-  { id: "format", label: "Format napisów", icon: "file" },
   { id: "platnosci", label: "Plan i płatności", icon: "card" },
   { id: "bezpieczenstwo", label: "Bezpieczeństwo", icon: "shield" },
 ];
@@ -247,17 +246,6 @@ function UstawieniaInner() {
                 </div>
               </Card>
             </div>
-          )}
-
-          {section === "format" && (
-            <Card title="Format napisów i quality layer" desc="WCAG jest ciągłą kontrolą jakości, nie osobnym jednorazowym raportem.">
-              <div className="space-y-2">
-                <ReadonlyField label="Maks. długość linii" value="42 znaki" />
-                <ReadonlyField label="Zalecana długość linii" value="≤ 37 znaków" />
-                <ReadonlyField label="Maks. linie na ekranie" value="2" />
-                <ReadonlyField label="Eksport" value="SRT + VTT teraz, PDF placeholder" />
-              </div>
-            </Card>
           )}
 
           {section === "platnosci" && (
