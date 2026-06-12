@@ -13,7 +13,6 @@ import { getHealth, setConfig, type HealthInfo } from "@/lib/api";
 import { ENGINE_MODES, getEngineMode, setEngineMode, type EngineMode } from "@/lib/engineMode";
 import {
   DEFAULT_POLICY,
-  ORCHESTRATOR_STATUS,
   OTHER_PROVIDER_GROUPS,
   SOUND_EVENT_PROVIDERS,
   STRATEGIES,
@@ -30,8 +29,6 @@ type SectionId = "ogolne" | "strategia" | "zrodla" | "ai" | "dzwieki" | "format"
 
 const SECTIONS: { id: SectionId; label: string; icon: IconName }[] = [
   { id: "ogolne", label: "Ogólne", icon: "settings" },
-  { id: "strategia", label: "Strategia", icon: "sparkles" },
-  { id: "zrodla", label: "Źródła transkryptu", icon: "captions" },
   { id: "ai", label: "Silnik AI", icon: "mic" },
   { id: "dzwieki", label: "Dźwięki niewerbalne", icon: "wave" },
   { id: "format", label: "Format napisów", icon: "file" },
@@ -87,7 +84,7 @@ function UstawieniaInner() {
   const params = useSearchParams();
   const dev = params.get("dev") === "1";
   const visibleSections = dev ? [...SECTIONS, DEV_SECTION] : SECTIONS;
-  const [section, setSection] = useState<SectionId>("strategia");
+  const [section, setSection] = useState<SectionId>("ai");
   const [health, setHealth] = useState<HealthInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -187,60 +184,6 @@ function UstawieniaInner() {
             </Card>
           )}
 
-          {section === "strategia" && (
-            <div className="space-y-4">
-              <Card title="Strategia przetwarzania" desc="Użytkownik wrzuca plik albo link. Orkiestrator sam wybiera źródło transkryptu i providerów.">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {STRATEGIES.map((s) => {
-                    const active = strategy === s.id;
-                    return (
-                      <button key={s.id} type="button" onClick={() => setStrategy(s.id)}
-                        className={`focusring rounded-xl border p-3 text-left transition-colors ${active ? "border-brand-400 bg-brand-50 text-brand-700" : "border-hair bg-white text-graphite hover:border-brand-200 hover:bg-brand-50/50"}`}>
-                        <span className="block text-sm font-medium">{s.label}</span>
-                        <span className="mt-0.5 block text-xs text-muted">{s.short}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/60 p-4">
-                  <p className="text-sm font-medium text-graphite">{activeStrategy.label}: {activeStrategy.description}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {activeStrategy.priorities.map((p) => <span key={p} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-brand-700 ring-1 ring-brand-100">{p}</span>)}
-                  </div>
-                </div>
-              </Card>
-
-              <Card title="Status orkiestratora" desc="Główny widok: strategia i capabilities. Szczegóły providerów są niżej, w Zaawansowanych.">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {ORCHESTRATOR_STATUS.map((s) => (
-                    <div key={s.label} className="rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium text-graphite">{s.label}</span>
-                        <Badge tone={toneForStatus(s.status)}>{statusLabel(s.status)}</Badge>
-                      </div>
-                      <p className="mt-1 text-xs text-muted">{s.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {section === "zrodla" && (
-            <Card title="Źródła transkryptu i napisów" desc="To jest ważniejsze niż sam ASR: najtańsza ścieżka często zaczyna się od gotowych napisów.">
-              <p className="text-sm text-graphite">Orkiestrator sam sprawdza źródła w tej kolejności — nie wybierasz dostawców ręcznie.</p>
-              <details className="mt-4 rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-                <summary className="cursor-pointer text-sm font-medium text-graphite">Zaawansowane: kolejność kaskadowa</summary>
-                <ol className="mt-3 space-y-1.5 text-xs text-muted">
-                  <li>1. Sprawdź gotowe napisy lub auto captions z platformy.</li>
-                  <li>2. Użyj importu SRT/VTT/TXT albo wklejonego transkryptu.</li>
-                  <li>3. Jeśli trzeba, pobierz/wyciągnij audio jako etap techniczny.</li>
-                  <li>4. Uruchom ASR i alignment tylko wtedy, gdy nie ma tańszego źródła.</li>
-                </ol>
-              </details>
-            </Card>
-          )}
-
           {section === "ai" && (
             <div className="space-y-4">
               <Card title="Silnik AI — model i orientacyjny cennik" desc="Nie podajesz żadnego klucza API. Wybierasz tryb/model — to wpływa na jakość, szybkość i cenę. Pod spodem Widźwięk sam dobiera dostawcę i rozlicza minuty zgodności WCAG.">
@@ -261,15 +204,36 @@ function UstawieniaInner() {
                 </div>
                 <p className="mt-3 text-xs text-muted">Ceny orientacyjne (TBD) — finalne stawki ustalimy przy uruchomieniu rozliczeń. Rozliczamy „minuty zgodności WCAG”, nie dostawcę. Pole klucza API zostaje wyłącznie dla firm/developerów w trybie zaawansowanym.</p>
               </Card>
-              <Card title="Jak dobieramy dostawcę" desc="Klient nie wybiera providera — Widźwięk dobiera go sam pod materiał i tryb.">
-                <div className="rounded-xl border border-ok/30 bg-ok/5 p-4">
-                  <p className="text-sm font-medium text-graphite">Orkiestrator wybiera provider dopiero po sprawdzeniu źródła transkryptu.</p>
-                  <p className="mt-1 text-xs text-muted">Dzięki temu import napisów, auto captions i gotowe transkrypty mogą obniżać koszt bez ręcznej decyzji użytkownika.</p>
+              <Card title="Strategia przetwarzania" desc="Wybierasz cel (jakość/koszt/szybkość). Orkiestrator sam dobiera źródło transkryptu i dostawców — bez ręcznego wyboru providerów.">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {STRATEGIES.map((s) => {
+                    const active = strategy === s.id;
+                    return (
+                      <button key={s.id} type="button" onClick={() => setStrategy(s.id)}
+                        className={`focusring rounded-xl border p-3 text-left transition-colors ${active ? "border-brand-400 bg-brand-50 text-brand-700" : "border-hair bg-white text-graphite hover:border-brand-200 hover:bg-brand-50/50"}`}>
+                        <span className="block text-sm font-medium">{s.label}</span>
+                        <span className="mt-0.5 block text-xs text-muted">{s.short}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="mt-3 text-xs text-muted">Pełna lista dostawców i ich statusy jest w trybie developerskim.</p>
+                <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50/60 p-4">
+                  <p className="text-sm font-medium text-graphite">{activeStrategy.label}: {activeStrategy.description}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {activeStrategy.priorities.map((p) => <span key={p} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-brand-700 ring-1 ring-brand-100">{p}</span>)}
+                  </div>
+                </div>
               </Card>
-              <Card title="Rozpoznawanie mówców" desc="Mówcy są osobną capability, nie efektem ubocznym ASR.">
-                <p className="text-sm text-graphite">Mówcy są wykrywani automatycznie (w demo na materiale przykładowym). Nazwy i kolory poprawisz w edytorze — bez wyboru dostawców.</p>
+              <Card title="Źródła transkryptu i napisów" desc="Ważniejsze niż sam ASR: najtańsza ścieżka często zaczyna się od gotowych napisów. Orkiestrator sprawdza źródła w tej kolejności — nie wybierasz dostawców ręcznie.">
+                <details className="rounded-xl border border-hair/60 bg-white px-3 py-2.5">
+                  <summary className="cursor-pointer text-sm font-medium text-graphite">Zaawansowane: kolejność kaskadowa</summary>
+                  <ol className="mt-3 space-y-1.5 text-xs text-muted">
+                    <li>1. Sprawdź gotowe napisy lub auto captions z platformy.</li>
+                    <li>2. Użyj importu SRT/VTT/TXT albo wklejonego transkryptu.</li>
+                    <li>3. Jeśli trzeba, pobierz/wyciągnij audio jako etap techniczny.</li>
+                    <li>4. Uruchom ASR i alignment tylko wtedy, gdy nie ma tańszego źródła.</li>
+                  </ol>
+                </details>
               </Card>
             </div>
           )}

@@ -45,7 +45,7 @@ export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
         <div className="rounded-xl bg-white/60 px-3 py-2.5 ring-1 ring-hair/60">
           <StatusDot tone={workerUp === false ? "err" : workerUp ? "ok" : "neutral"}
             label={workerUp === false ? "worker offline" : workerUp ? "system online" : "łączenie…"} />
-          <p className="mt-1 text-[11px] text-muted">Widźwięk Pracownia · demo · build <span className="font-mono">engine-pricing</span></p>
+          <p className="mt-1 text-[11px] text-muted">Widźwięk Pracownia · demo · build <span className="font-mono">settings-clean</span></p>
         </div>
       </div>
     </aside>
