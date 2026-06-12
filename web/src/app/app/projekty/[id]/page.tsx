@@ -33,7 +33,7 @@ export default function ProjectSummary() {
   const pipeline = doc.meta.pipeline;
   const q = doc.meta.quality;
   const dec = doc.meta.decision;
-  const SRC_LABEL: Record<string, string> = { demo: "Materiał demonstracyjny", "captions-import": "Import napisów", "local-file-asr": "Lokalna transkrypcja", "local-asr": "Lokalna transkrypcja", mock: "Demo" };
+  const SRC_LABEL: Record<string, string> = { sample: "Materiał przykładowy", "captions-import": "Import napisów", "local-file-asr": "Lokalna transkrypcja", "local-asr": "Lokalna transkrypcja" };
   const SCORE_LABEL: { k: keyof NonNullable<typeof q>; l: string }[] = [
     { k: "transcription", l: "Transkrypcja" }, { k: "diarization", l: "Mówcy" }, { k: "sound_events", l: "Dźwięki" },
     { k: "segmentation", l: "Segmentacja" }, { k: "wcag", l: "WCAG" }, { k: "completeness", l: "Kompletność" },
@@ -71,7 +71,7 @@ export default function ProjectSummary() {
             <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Źródło transkryptu</span><span className="text-right font-medium text-graphite">{dec ? (SRC_LABEL[dec.transcript_source] ?? dec.transcript_source) : DEFAULT_PROCESSING_DECISION.transcriptSource}</span></div>
             <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Provider transkrypcji</span><span className="text-right font-medium text-graphite">{pipeline.asr}</span></div>
             <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Mówcy / dźwięki</span><span className="text-right font-medium text-graphite">{pipeline.diarization} · {pipeline.sound_events}</span></div>
-            <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Koszt demo</span><span className="text-right font-medium text-graphite">≈ {credits} kredytów</span></div>
+            <div className="flex justify-between gap-3 text-sm"><span className="text-muted">Szacowany koszt</span><span className="text-right font-medium text-graphite">≈ {credits} kredytów</span></div>
           </div>
         </div>
         <div className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">

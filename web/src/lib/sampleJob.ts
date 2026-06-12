@@ -1,22 +1,22 @@
-// Syntetyczny "gotowy" job zbudowany z DEMO_DOC — pozwala pokazać PEŁEN flow
+// Syntetyczny "gotowy" job zbudowany z SAMPLE_DOC — pozwala pokazać PEŁEN flow
 // w /app/studio nawet gdy worker jest offline (tryb przykładowego materiału).
 import type { Job } from "./contract";
-import { DEMO_DOC } from "./demoDoc";
+import { SAMPLE_DOC } from "./sampleDoc";
 
 export function buildSampleJob(): Job {
   const now = new Date().toISOString();
   return {
-    id: "sample-demo",
+    id: "sample",
     status: "done",
     created_at: now,
     updated_at: now,
-    filename: DEMO_DOC.media.filename,
+    filename: SAMPLE_DOC.media.filename,
     error: null,
-    result: DEMO_DOC,
+    result: SAMPLE_DOC,
   };
 }
 
-// Szacunkowy koszt (demo) — czytelna heurystyka, NIE pobiera realnych kredytów.
+// Szacunkowy koszt (poglądowy) — czytelna heurystyka, NIE pobiera realnych kredytów.
 export function estimateCredits(durationMs: number, opts: { speakers: boolean; sounds: boolean; wcag: boolean }): number {
   const minutes = Math.max(1, Math.ceil(durationMs / 60000));
   let mult = 1;

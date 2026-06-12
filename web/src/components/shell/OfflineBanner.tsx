@@ -1,6 +1,6 @@
 "use client";
-// Offline — komunikat dwuwarstwowy: dla użytkownika (demo działa) + dla developera (jak uruchomić).
-// Przygaszony OFICJALNY sygnet + retry. Demo NIE jest zepsute, gdy worker śpi.
+// Offline — komunikat dwuwarstwowy: dla użytkownika (aplikacja działa) + dla developera (jak uruchomić).
+// Przygaszony OFICJALNY sygnet + retry. Aplikacja NIE jest zepsuta, gdy worker śpi.
 import { motion } from "framer-motion";
 import Link from "next/link";
 import BrandEye from "@/components/brand/BrandEye";
@@ -15,7 +15,7 @@ export default function OfflineBanner({ onRetry }: { onRetry?: () => void }) {
         <BrandEye width={44} style={{ opacity: 0.35, filter: "grayscale(0.4)" }} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-graphite">Silnik przetwarzania jest offline — demo działa dalej</p>
+        <p className="text-sm font-medium text-graphite">Silnik przetwarzania jest offline — aplikacja działa dalej</p>
         <p className="text-xs text-muted">
           Możesz obejrzeć pełny przykładowy wynik bez uruchamiania backendu.
           <span className="text-muted/80"> Dla developera: <code className="rounded bg-white/70 px-1">uvicorn widzwiek.main:app --port 8000</code></span>

@@ -1,8 +1,8 @@
 "use client";
-// Rozwiązuje projekt po id: realny job workera (edytowalny, trwały) albo materiał demo (read-only).
+// Rozwiązuje projekt po id: realny job workera (edytowalny, trwały) albo materiał przykładowy (read-only).
 import { useCallback, useEffect, useState } from "react";
 import type { CaptionDocument } from "./contract";
-import { getProject as getDemoProject, getProjectDoc } from "./projects";
+import { getProject as getSampleProject, getProjectDoc } from "./projects";
 import { getJob } from "./api";
 
 export type ProjectStatus = "queued" | "processing" | "done" | "review" | "error";
@@ -23,9 +23,9 @@ export function useProject(id: string) {
   });
 
   const load = useCallback(() => {
-    const demo = getDemoProject(id);
-    if (demo) {
-      setV({ loading: false, found: true, real: false, title: demo.title, status: demo.status, doc: getProjectDoc(id) });
+    const sample = getSampleProject(id);
+    if (sample) {
+      setV({ loading: false, found: true, real: false, title: sample.title, status: sample.status, doc: getProjectDoc(id) });
       return;
     }
     getJob(id)

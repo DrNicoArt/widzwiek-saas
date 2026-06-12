@@ -1,6 +1,6 @@
 // Model B: klient wybiera TRYB „Silnika AI", nie providera. Tryb mapuje się na konkretny
 // model/strategię pod spodem (którą Widźwięk może w przyszłości podmieniać bez zmiany UI).
-// W demo (silnik w przeglądarce) tryb wybiera model Whisper; docelowo steruje Routerem providerów.
+// W trybie przeglądarkowym tryb wybiera model Whisper; docelowo steruje Routerem providerów.
 import { setAsrModel } from "./asrModel";
 
 export type EngineMode = "auto" | "quality" | "cheap" | "fast";

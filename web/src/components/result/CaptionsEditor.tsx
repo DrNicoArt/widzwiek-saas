@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { CaptionDocument, CaptionStyle, CueKind, Speaker } from "@/lib/contract";
 import { DEFAULT_STYLE, FONTS, SIZE_PRESETS, fontCss, contrastRatio, msToTimecode } from "@/lib/contract";
-import { updateDocument, IS_STATIC_DEMO } from "@/lib/api";
+import { updateDocument, IS_BROWSER_MODE } from "@/lib/api";
 import { autoFix } from "@/lib/autofix";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
@@ -85,7 +85,7 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
   // wewnetrznie (finalizeDoc + zapis LS), wiec write wykona sie przed odmontowaniem.
   const flushRef = useRef<() => void>(() => {});
   flushRef.current = () => {
-    if (!IS_STATIC_DEMO) return;
+    if (!IS_BROWSER_MODE) return;
     if (savedKey === null || savedKey === stateKey) return;
     try {
       const next: CaptionDocument = {
@@ -163,10 +163,10 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
     finally { setSaving(false); }
   }, [doc, jobId, onSaved, rows, speakers, style]);
 
-  // Autozapis (tryb demo): edycje trafiaja do localStorage ~0.9 s po zmianie, bez klikania
+  // Autozapis (tryb przeglądarkowy): edycje trafiaja do localStorage ~0.9 s po zmianie, bez klikania
   // przycisku. Dzieki temu wyjscie z projektu nie gubi poprawek transkrypcji.
   useEffect(() => {
-    if (!IS_STATIC_DEMO) return;
+    if (!IS_BROWSER_MODE) return;
     if (savedKey === null || savedKey === stateKey) return; // brak niezapisanych zmian
     const t = setTimeout(async () => {
       try {

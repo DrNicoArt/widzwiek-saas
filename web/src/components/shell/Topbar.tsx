@@ -25,10 +25,10 @@ export default function Topbar() {
             aria-label="Szukaj materiałów" className="focusring h-10 w-64 rounded-xl border border-hair/70 bg-white/70 pl-10 pr-3 text-sm outline-none placeholder:text-muted/70" />
         </div>
       </form>
-      <button className="focusring grid h-10 w-10 place-items-center rounded-xl border border-hair/70 bg-white/70 text-muted hover:bg-brand-50" aria-label="Powiadomienia (demo)" title="Powiadomienia (demo)">
+      <button className="focusring grid h-10 w-10 place-items-center rounded-xl border border-hair/70 bg-white/70 text-muted hover:bg-brand-50" aria-label="Powiadomienia" title="Powiadomienia">
         <Icon name="bell" size={19} />
       </button>
-      <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-sm font-medium text-white" title="Konto demo" aria-hidden>AN</div>
+      <div className="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-sm font-medium text-white" title="Konto" aria-hidden>AN</div>
     </header>
   );
 }

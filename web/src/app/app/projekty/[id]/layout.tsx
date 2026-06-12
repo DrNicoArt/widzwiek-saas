@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { DEMO_PROJECTS } from "@/lib/mockData";
+import { SAMPLE_PROJECTS } from "@/lib/sampleData";
 import ProjectClientLayout from "./ProjectClientLayout";
 
 export function generateStaticParams() {
-  return [...DEMO_PROJECTS.map((project) => ({ id: project.id })), { id: "sample-demo" }];
+  return [...SAMPLE_PROJECTS.map((project) => ({ id: project.id })), { id: "sample" }];
 }
 
 export default function ProjectLayout({ children }: { children: ReactNode }) {

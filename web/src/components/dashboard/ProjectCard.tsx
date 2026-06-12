@@ -2,18 +2,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import type { DemoProject } from "@/lib/mockData";
+import type { SampleProject } from "@/lib/sampleData";
 import { Badge, type Tone } from "@/components/ui/Badge";
 import Icon from "@/components/ui/Icon";
 import { fadeUp, cardHover } from "@/lib/motion";
 
-const STATUS: Record<DemoProject["status"], { tone: Tone; label: string }> = {
+const STATUS: Record<SampleProject["status"], { tone: Tone; label: string }> = {
   done: { tone: "ok", label: "gotowe" },
   processing: { tone: "info", label: "przetwarzanie" },
   review: { tone: "warn", label: "do poprawy" },
 };
 
-export default function ProjectCard({ p, onDelete }: { p: DemoProject; onDelete?: (id: string) => void }) {
+export default function ProjectCard({ p, onDelete }: { p: SampleProject; onDelete?: (id: string) => void }) {
   const s = STATUS[p.status];
   const base = `/app/projekty/${p.id}`;
   const processing = p.status === "processing";

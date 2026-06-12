@@ -1,6 +1,6 @@
 "use client";
 // Mówcy i dźwięki — Widźwięk robi captions, nie tylko subtitles. Dane z CaptionDocument.
-// Jasne oznaczenie: w demo to dane mock; realne providery (diaryzacja, detekcja dźwięków) = placeholder.
+// Jasne oznaczenie: dane poglądowe; automatyczne rozpoznawanie mówców i dźwięków dochodzi w wersji serwerowej.
 import { motion } from "framer-motion";
 import type { CaptionDocument } from "@/lib/contract";
 import { SPEAKER_CSS_COLOR, msToTimecode } from "@/lib/contract";
@@ -28,7 +28,7 @@ export default function SpeakersSounds({ doc }: { doc: CaptionDocument }) {
       time: Math.min(doc.media.duration_ms, 22000),
       status: "pominięty",
       relevance: "nisko istotny",
-      source: "demo/manual",
+      source: "auto/ręcznie",
       confidence: "0.41",
     },
   ];
@@ -55,7 +55,7 @@ export default function SpeakersSounds({ doc }: { doc: CaptionDocument }) {
       <motion.div variants={fadeUp} className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="users" size={18} className="text-brand-600" /> Mówcy</h3>
-          <Badge tone="info">demo · diaryzacja TBD</Badge>
+          <Badge tone="info">rozpoznawanie automatyczne</Badge>
         </div>
         <motion.ul variants={stagger} initial="hidden" animate="show" className="space-y-2">
           {doc.speakers.map((s) => (

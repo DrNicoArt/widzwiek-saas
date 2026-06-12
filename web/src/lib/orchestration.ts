@@ -18,7 +18,7 @@ export type ProviderKind =
   | "billing";
 
 export type ProviderStatus =
-  | "active_demo"
+  | "active_sample"
   | "available"
   | "api_ready"
   | "missing_key"
@@ -50,9 +50,9 @@ export interface ProviderCostProfile {
 }
 
 export interface ProviderQualityProfile {
-  quality: "demo" | "basic" | "standard" | "high" | "human_review";
+  quality: "sample" | "basic" | "standard" | "high" | "human_review";
   latency: "instant" | "fast" | "standard" | "slow";
-  reliability: "demo" | "experimental" | "stable" | "enterprise";
+  reliability: "sample" | "experimental" | "stable" | "enterprise";
 }
 
 export interface ProviderCapabilityProfile {
@@ -181,11 +181,11 @@ export const TRANSCRIPT_SOURCE_PROVIDERS: ProviderCapabilityProfile[] = [
     kind: "transcript_source",
     name: "SRT/VTT upload",
     userLabel: "Import SRT / VTT",
-    status: "active_demo",
+    status: "active_sample",
     cost: { tier: "free", note: "użytkownik dostarcza napisy" },
     quality: { quality: "standard", latency: "instant", reliability: "stable" },
     capabilities: ["captions_import", "forced_alignment"],
-    note: "Import działa w demo; edytor i WCAG normalizują plik do CaptionDocument.",
+    note: "Import działa; edytor i WCAG normalizują plik do CaptionDocument.",
   },
   {
     id: "txt-csv-json-import",
@@ -218,16 +218,16 @@ export const TRANSCRIPT_SOURCE_PROVIDERS: ProviderCapabilityProfile[] = [
     cost: { tier: "low", note: "najpierw sprawdza napisy, potem audio" },
     quality: { quality: "standard", latency: "standard", reliability: "experimental" },
     capabilities: ["captions_import", "url_audio_extract"],
-    note: "Placeholder; nie wykonuje scrapingu ani live requestów w demo.",
+    note: "Placeholder; nie wykonuje scrapingu ani zapytań na żywo.",
   },
   {
-    id: "demo-transcript",
+    id: "sample-transcript",
     kind: "transcript_source",
-    name: "Demo transcript",
-    userLabel: "Przykładowy materiał demo",
-    status: "active_demo",
-    cost: { tier: "free", note: "mock" },
-    quality: { quality: "demo", latency: "instant", reliability: "demo" },
+    name: "Przykładowy transkrypt",
+    userLabel: "Materiał przykładowy",
+    status: "active_sample",
+    cost: { tier: "free", note: "—" },
+    quality: { quality: "sample", latency: "instant", reliability: "sample" },
     capabilities: ["captions_import", "wcag_validation", "srt_export", "vtt_export"],
     note: "Realistyczny CaptionDocument bez zewnętrznych API.",
   },
@@ -260,7 +260,7 @@ export const TRANSCRIPTION_PROVIDERS: ProviderCapabilityProfile[] = [
 ];
 
 export const SOUND_EVENT_PROVIDERS: ProviderCapabilityProfile[] = [
-  provider("demo-sound-events", "sound_events", "Demo/noop sound events", "Demo dźwięków", "active_demo", "free", "Mock/noop provider; pokazuje docelowy workflow.", ["sound_events"]),
+  provider("sample-sound-events", "sound_events", "Wykrywanie dźwięków (przykład)", "Dźwięki (przykład)", "active_sample", "free", "Poglądowy dostawca; pokazuje docelowy przepływ.", ["sound_events"]),
   provider("manual-sound-labels", "sound_events", "Manual sound event labels", "Ręczne opisy dźwięków", "available", "free", "Użytkownik może dodać lub poprawić opis w edytorze.", ["sound_events"]),
   provider("yamnet", "sound_events", "YAMNet placeholder", "YAMNet", "placeholder", "low", "AudioSet-based classifier placeholder.", ["sound_events"]),
   provider("panns", "sound_events", "PANNs placeholder", "PANNs", "placeholder", "low", "Audio tagging placeholder.", ["sound_events"]),
@@ -272,21 +272,21 @@ export const SOUND_EVENT_PROVIDERS: ProviderCapabilityProfile[] = [
 ];
 
 export const OTHER_PROVIDER_GROUPS: ProviderCapabilityProfile[] = [
-  provider("mock-diarization", "diarization", "Demo diarization", "Demo mówców", "active_demo", "free", "Mock: realistyczni mówcy w przykładowym materiale.", ["speaker_diarization"]),
+  provider("sample-diarization", "diarization", "Diaryzacja (przykład)", "Mówcy (przykład)", "active_sample", "free", "Przykładowi mówcy w materiale przykładowym.", ["speaker_diarization"]),
   provider("pyannote-placeholder", "diarization", "Pyannote diarization placeholder", "Pyannote", "placeholder", "metered", "Future diarization adapter.", ["speaker_diarization"]),
   provider("forced-alignment", "alignment", "Forced alignment", "Dopasowanie tekstu do audio", "placeholder", "low", "Dla dostarczonego transkryptu.", ["forced_alignment", "word_timestamps"]),
   provider("whisperx-alignment", "alignment", "WhisperX alignment", "WhisperX alignment", "placeholder", "low", "Alignment/postprocess placeholder.", ["forced_alignment", "word_timestamps"]),
   provider("language-tool", "text_cleanup", "LanguageTool/text cleanup", "Korekta tekstu", "placeholder", "low", "Czyszczenie tekstu i interpunkcja.", ["text_cleanup"]),
-  provider("srt-vtt-export", "export", "SRT/VTT export", "Eksport SRT/VTT", "active_demo", "free", "Działa deterministycznie z CaptionDocument.", ["srt_export", "vtt_export"]),
+  provider("srt-vtt-export", "export", "SRT/VTT export", "Eksport SRT/VTT", "active_sample", "free", "Działa deterministycznie z CaptionDocument.", ["srt_export", "vtt_export"]),
   provider("pdf-report", "export", "PDF WCAG report", "Raport PDF", "planned", "low", "Placeholder eksportu dokumentu audytowego.", ["pdf_report"]),
 ];
 
 export const DEFAULT_PROCESSING_DECISION: ProcessingDecision = {
   strategy: "automatic",
-  transcriptSource: "SRT/VTT upload albo demo transcript",
-  transcriptionProvider: "OpenAI jako pierwszy live provider; mock w demo",
-  diarizationProvider: "Demo diarization / placeholder",
-  soundEventProvider: "Demo/noop sound events + ręczne opisy",
+  transcriptSource: "SRT/VTT lub transkrypt przykładowy",
+  transcriptionProvider: "OpenAI jako pierwszy dostawca; przykład w trybie poglądowym",
+  diarizationProvider: "Rozpoznawanie mówców (wkrótce)",
+  soundEventProvider: "Wykrywanie dźwięków + ręczne opisy",
   alignmentProvider: "Forced alignment placeholder",
   textCleanupProvider: "Deterministyczne formatowanie + WCAG rules",
   exportProvider: "SRT/VTT export",
@@ -300,22 +300,22 @@ export const DEFAULT_PROCESSING_DECISION: ProcessingDecision = {
     "waliduj WCAG",
     "edytuj i eksportuj",
   ],
-  reason: "Demo pokazuje finalny workflow; realny orkiestrator będzie wybierał najtańszą lub najlepszą ścieżkę per materiał.",
+  reason: "Przykład pokazuje finalny przepływ; realny orkiestrator będzie wybierał najtańszą lub najlepszą ścieżkę per materiał.",
 };
 
 export const ORCHESTRATOR_STATUS = [
-  { label: "Źródła napisów", value: "import/demo działa; URL placeholder", status: "active_demo" as ProviderStatus },
+  { label: "Źródła napisów", value: "import działa; URL wkrótce", status: "active_sample" as ProviderStatus },
   { label: "Dostawca transkrypcji", value: "OpenAI api-ready; reszta placeholder", status: "api_ready" as ProviderStatus },
-  { label: "Rozpoznawanie mówców", value: "demo/single-speaker; provider TBD", status: "placeholder" as ProviderStatus },
+  { label: "Rozpoznawanie mówców", value: "pojedynczy mówca; rozpoznawanie wkrótce", status: "placeholder" as ProviderStatus },
   { label: "Dźwięki niewerbalne", value: "top-level capability; detekcja TBD", status: "placeholder" as ProviderStatus },
-  { label: "Walidacja WCAG", value: "realne reguły w demo", status: "active_demo" as ProviderStatus },
-  { label: "Eksport", value: "SRT/VTT/TXT/JSON; PDF placeholder", status: "active_demo" as ProviderStatus },
-  { label: "Koszt/kredyty", value: "mock usage estimate", status: "active_demo" as ProviderStatus },
+  { label: "Walidacja WCAG", value: "realne reguły WCAG", status: "active_sample" as ProviderStatus },
+  { label: "Eksport", value: "SRT/VTT/TXT/JSON; PDF placeholder", status: "active_sample" as ProviderStatus },
+  { label: "Koszt/kredyty", value: "szacunek poglądowy", status: "active_sample" as ProviderStatus },
 ];
 
 export function statusLabel(status: ProviderStatus): string {
   return ({
-    active_demo: "aktywne w demo",
+    active_sample: "aktywne",
     available: "dostępne",
     api_ready: "gotowe do API",
     missing_key: "brak klucza",
@@ -345,9 +345,9 @@ function provider(
     status,
     cost: { tier, note: tier === "free" ? "darmowe/niskokosztowe" : note },
     quality: {
-      quality: status === "active_demo" ? "demo" : tier === "premium" ? "high" : "standard",
-      latency: status === "active_demo" ? "instant" : "standard",
-      reliability: status === "active_demo" ? "demo" : "experimental",
+      quality: status === "active_sample" ? "sample" : tier === "premium" ? "high" : "standard",
+      latency: status === "active_sample" ? "instant" : "standard",
+      reliability: status === "active_sample" ? "sample" : "experimental",
     },
     capabilities,
     note,

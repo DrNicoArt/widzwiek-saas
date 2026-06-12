@@ -1,11 +1,11 @@
 "use client";
-// Projekty — realne, trwałe materiały z workera (limit magazynu + usuwanie) + przykłady demo.
+// Projekty — realne, trwałe materiały z workera (limit magazynu + usuwanie) + materiały przykładowe.
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { listJobs, deleteJob, getStorage, type StorageInfo } from "@/lib/api";
 import type { Job } from "@/lib/contract";
-import { DEMO_PROJECTS, type DemoProject } from "@/lib/mockData";
+import { SAMPLE_PROJECTS, type SampleProject } from "@/lib/sampleData";
 import PageHeader from "@/components/shell/PageHeader";
 import ProjectCard from "@/components/dashboard/ProjectCard";
 import Icon from "@/components/ui/Icon";
@@ -20,8 +20,8 @@ function scoreOf(j: Job): number {
 function dur(ms: number): string {
   const t = Math.round(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
 }
-function jobToCard(j: Job): DemoProject {
-  const status: DemoProject["status"] = j.status === "done" ? "done" : j.status === "error" ? "review" : "processing";
+function jobToCard(j: Job): SampleProject {
+  const status: SampleProject["status"] = j.status === "done" ? "done" : j.status === "error" ? "review" : "processing";
   return {
     id: j.id, title: j.filename || "Materiał", durationLabel: j.result ? dur(j.result.media.duration_ms) : "—",
     status, wcag: scoreOf(j), updated: new Date(j.updated_at).toLocaleDateString("pl-PL"), accent: "#0057A8",
@@ -64,14 +64,14 @@ function ProjektyInner() {
 
   const match = (t: string) => !q || t.toLowerCase().includes(q);
   const real = (jobs ?? []).map(jobToCard).filter((p) => match(p.title));
-  const demo = DEMO_PROJECTS.filter((p) => match(p.title));
+  const samples = SAMPLE_PROJECTS.filter((p) => match(p.title));
   const hasReal = real.length > 0;
   const workerOnline = jobs !== null && jobs !== undefined && storage !== null;
 
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader icon="folder" title="Projekty"
-        desc="Twoje materiały są trwałe (przetrwają restart silnika). Możesz je usuwać; magazyn ma limit. Poniżej także przykłady demo." />
+        desc="Twoje materiały są trwałe (przetrwają restart silnika). Możesz je usuwać; magazyn ma limit. Poniżej także materiały przykładowe." />
 
       {storage && <StorageBar s={storage} />}
       {q && <p className="mb-4 text-sm text-muted">Wyniki dla: <strong className="text-graphite">{q}</strong></p>}
@@ -91,10 +91,10 @@ function ProjektyInner() {
       )}
 
       <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted">
-        <Icon name="sparkles" size={14} /> {hasReal ? "Przykłady (demo)" : "Materiały przykładowe (demo)"}
+        <Icon name="sparkles" size={14} /> {hasReal ? "Przykłady" : "Materiały przykładowe"}
       </div>
       <motion.div initial="hidden" whileInView="show" viewport={inView} variants={stagger} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {demo.map((p) => <ProjectCard key={p.id} p={p} />)}
+        {samples.map((p) => <ProjectCard key={p.id} p={p} />)}
       </motion.div>
     </div>
   );

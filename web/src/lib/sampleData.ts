@@ -1,10 +1,9 @@
-// DEMO DATA (UI) — dane przykładowe dla ekranów (biblioteka, statystyki). Wyraźnie oznaczone
-// jako warstwa demonstracyjna; zgodne z duchem kontraktu. Nie udają live API.
-export const IS_DEMO_DATA = true;
+// Dane przykładowe (UI) dla ekranów (biblioteka, statystyki). Wyraźnie oznaczone jako
+// warstwa przykładowa; zgodne z duchem kontraktu. Nie udają live API.
 
 export type ProjectStatus = "done" | "processing" | "review";
 
-export interface DemoProject {
+export interface SampleProject {
   id: string;
   title: string;
   durationLabel: string;
@@ -14,7 +13,7 @@ export interface DemoProject {
   accent: string;
 }
 
-export const DEMO_PROJECTS: DemoProject[] = [
+export const SAMPLE_PROJECTS: SampleProject[] = [
   { id: "p1", title: "Konferencja o dostępności 2024", durationLabel: "18:42", status: "done", wcag: 96, updated: "2 godz. temu", accent: "#0057A8" },
   { id: "p2", title: "Szkolenie BHP — moduł 3", durationLabel: "32:10", status: "review", wcag: 81, updated: "wczoraj", accent: "#0D9488" },
   { id: "p3", title: "Webinar: Nowe standardy WCAG", durationLabel: "47:55", status: "processing", wcag: 0, updated: "przed chwilą", accent: "#7C3AED" },
@@ -24,7 +23,7 @@ export const DEMO_PROJECTS: DemoProject[] = [
 ];
 
 // icon: nazwy z zestawu @/components/ui/Icon
-export const DEMO_STATS = [
+export const SAMPLE_STATS = [
   { label: "Wszystkie projekty", value: 24, icon: "folder" },
   { label: "W toku", value: 3, icon: "clock" },
   { label: "Zgodne z WCAG", value: 18, icon: "checkCircle" },

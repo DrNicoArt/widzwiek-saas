@@ -1,7 +1,7 @@
 "use client";
-// Plan i płatności. Stan planu i wykres liczone z REALNYCH materiałów użytkownika (listJobs).
-// Stawka pokazywana wg wybranego trybu silnika. Płatności na PoC nieaktywne — uruchomimy je
-// przy starcie płatnej wersji; przyciski zbierają zainteresowanie, nic nie jest pobierane.
+// Plan i płatności. Stan planu i wykres liczone z REALNYCH materiałów (listJobs). Stawka wg trybu
+// silnika. Płatności jeszcze nieaktywne — przyciski nawigują do sekcji planów / metod (działają),
+// nic nie jest pobierane.
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -35,8 +35,12 @@ function buildMonths(jobs: Job[]): Bucket[] {
   return keys.map(({ label, minutes }) => ({ label, minutes }));
 }
 
+function scrollToId(id: string) {
+  if (typeof document === "undefined") return;
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export default function Plan() {
-  const [hint, setHint] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[] | null>(null);
   useEffect(() => { listJobs().then(setJobs).catch(() => setJobs([])); }, []);
 
@@ -50,14 +54,12 @@ export default function Plan() {
   const maxM = Math.max(1, ...months.map((m) => m.minutes));
   const hasData = materials > 0;
 
-  const soon = (label: string) => { setHint(`„${label}" — uruchomimy przy starcie płatnej wersji. Chcesz wcześniejszy dostęp? Daj znać zespołowi SubrosAI.`); setTimeout(() => setHint(null), 4000); };
-
   const groups: PayRegion[] = ["PL", "global", "b2b"];
 
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader icon="card" title="Plan i płatności"
-        desc="Rozliczamy minuty gotowego, zgodnego z WCAG materiału. Płatności uruchomimy przy starcie wersji płatnej — w trybie demo nic nie jest pobierane." />
+        desc="Rozliczamy minuty gotowego, zgodnego z WCAG materiału. Płatności uruchomimy przy starcie wersji płatnej — na tym etapie nic nie jest pobierane." />
 
       <motion.div initial="hidden" whileInView="show" viewport={inView} variants={stagger} className="space-y-5">
         {/* Stan planu (realne dane) + wykres */}
@@ -65,8 +67,8 @@ export default function Plan() {
           <div className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-medium text-graphite">Twój plan</h3>
-              <Badge tone="info" icon="sparkles">Demo</Badge>
-              <Badge tone="warn" icon="shield">Bez opłat w trybie demo</Badge>
+              <Badge tone="info" icon="sparkles">Darmowy</Badge>
+              <Badge tone="warn" icon="shield">Bez opłat</Badge>
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-3">
@@ -107,50 +109,52 @@ export default function Plan() {
           </div>
         </motion.div>
 
-        {/* Akcje */}
+        {/* Akcje — przewijają do właściwej sekcji */}
         <motion.div variants={fadeUp} className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
           <div className="flex flex-wrap gap-2.5">
             {PRIMARY_ACTIONS.map((a, i) => (
-              <button key={a.id} onClick={() => soon(a.label)}
+              <button key={a.id} onClick={() => scrollToId(a.target)}
                 className={`focusring inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${i === 0 ? "bg-brand-600 text-white hover:bg-brand-700" : "border border-hair bg-white text-graphite hover:bg-brand-50"}`}>
                 <Icon name={a.icon} size={17} /> {a.label}
               </button>
             ))}
           </div>
-          {hint && <p className="mt-3 text-xs text-brand-700">{hint}</p>}
         </motion.div>
 
         {/* Plany */}
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} id="plany" className="scroll-mt-4">
           <div className="mb-3 flex items-center gap-2">
             <h3 className="text-sm font-medium text-graphite">Plany</h3>
             <Badge tone="neutral">ceny ustalane</Badge>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {PLAN_TIERS.map((t) => (
-              <div key={t.name} className={`flex flex-col rounded-2xl border p-5 shadow-card backdrop-blur-sm transition-shadow hover:shadow-lift ${t.highlight ? "border-brand-300 bg-brand-50/40" : "border-hair/70 bg-white/80"}`}>
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-graphite">{t.name}</h4>
-                  {t.highlight && <Badge tone="info">popularny</Badge>}
+            {PLAN_TIERS.map((t) => {
+              const free = t.name === "Darmowy";
+              return (
+                <div key={t.name} className={`flex flex-col rounded-2xl border p-5 shadow-card backdrop-blur-sm transition-shadow hover:shadow-lift ${t.highlight ? "border-brand-300 bg-brand-50/40" : "border-hair/70 bg-white/80"}`}>
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-graphite">{t.name}</h4>
+                    {t.highlight && <Badge tone="info">popularny</Badge>}
+                  </div>
+                  <div className="mt-1 text-lg font-medium text-graphite">{t.priceLabel}</div>
+                  <p className="mt-0.5 text-xs text-muted">{t.forWhom}</p>
+                  <ul className="mt-3 flex-1 space-y-1.5">
+                    {t.features.map((f) => (
+                      <li key={f} className="flex items-start gap-1.5 text-xs text-graphite"><Icon name="check" size={14} className="mt-0.5 shrink-0 text-ok" /> {f}</li>
+                    ))}
+                  </ul>
+                  <button onClick={() => free ? undefined : scrollToId("metody")} disabled={free}
+                    className={`focusring mt-4 w-full rounded-xl px-3 py-2 text-xs font-medium transition-colors ${free ? "cursor-default border border-ok/40 bg-ok/10 text-ok" : t.highlight ? "bg-brand-600 text-white hover:bg-brand-700" : "border border-hair text-graphite hover:bg-brand-50"}`}>
+                    {t.cta}
+                  </button>
                 </div>
-                <div className="mt-1 text-lg font-medium text-graphite">{t.priceLabel}</div>
-                <p className="mt-0.5 text-xs text-muted">{t.forWhom}</p>
-                <ul className="mt-3 flex-1 space-y-1.5">
-                  {t.features.map((f) => (
-                    <li key={f} className="flex items-start gap-1.5 text-xs text-graphite"><Icon name="check" size={14} className="mt-0.5 shrink-0 text-ok" /> {f}</li>
-                  ))}
-                </ul>
-                <button onClick={() => t.name === "Demo" ? undefined : soon(`${t.name}: ${t.cta}`)} disabled={t.name === "Demo"}
-                  className={`focusring mt-4 w-full rounded-xl px-3 py-2 text-xs font-medium transition-colors ${t.name === "Demo" ? "cursor-default border border-ok/40 bg-ok/10 text-ok" : t.highlight ? "bg-brand-600 text-white hover:bg-brand-700" : "border border-hair text-graphite hover:bg-brand-50"}`}>
-                  {t.cta}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
 
         {/* Metody płatności z logami */}
-        <motion.div variants={fadeUp} className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
+        <motion.div variants={fadeUp} id="metody" className="scroll-mt-4 rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
           <h3 className="mb-1 text-sm font-medium text-graphite">Metody płatności</h3>
           <p className="mb-4 text-xs text-muted">Obsłużymy popularne metody w Polsce i na świecie oraz fakturę dla instytucji. Włączymy je przy starcie wersji płatnej — kolejność zależy od potrzeb pierwszych klientów.</p>
           <div className="space-y-4">

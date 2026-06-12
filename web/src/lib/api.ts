@@ -5,7 +5,7 @@ import { buildSampleJob } from "./sampleJob";
 
 export const WORKER_URL =
   process.env.NEXT_PUBLIC_WORKER_URL?.replace(/\/$/, "") || "http://localhost:8000";
-export const IS_STATIC_DEMO = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
+export const IS_BROWSER_MODE = process.env.NEXT_PUBLIC_BROWSER_MODE === "1" || process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
 
 // Token organizacji do workera (tryb serwerowy z auth). Z env albo localStorage; pusty = brak naglowka.
 export function getApiToken(): string {
@@ -40,7 +40,7 @@ export interface ConfigUpdate {
 
 let staticJob: Job | null = null;
 
-// Biblioteka materialow w trybie demo (bez workera): trwala w localStorage przegladarki.
+// Biblioteka materialow w trybie przeglądarkowym (bez workera): trwala w localStorage przegladarki.
 const LS_KEY = "widzwiek.jobs";
 function lsJobs(): Job[] {
   try { return JSON.parse((typeof window !== "undefined" && window.localStorage.getItem(LS_KEY)) || "[]"); } catch { return []; }
@@ -58,14 +58,14 @@ function newId(): string { return Math.random().toString(36).slice(2, 10); }
 function staticHealth(): HealthInfo {
   return {
     status: "ok",
-    mode: "mock",
+    mode: "client",
     ready: true,
     api_key_present: false,
     openai_installed: false,
     ffmpeg_present: false,
     transcription_model: "whisper-1",
-    providers: { asr: "static-demo", diarization: "static-demo", sound_events: "static-demo" },
-    notes: ["Statyczna paczka demo - bez workera i bez kluczy API."],
+    providers: { asr: "client", diarization: "client", sound_events: "client" },
+    notes: ["Przetwarzanie w przeglądarce — bez serwera i bez kluczy API."],
   };
 }
 
@@ -73,7 +73,7 @@ function makeStaticJob(filename?: string, document?: CaptionDocument): Job {
   const job = buildSampleJob();
   staticJob = {
     ...job,
-    id: "sample-demo",
+    id: "sample",
     filename: filename || job.filename,
     result: document ? finalizeDoc(document) : job.result,
   };
@@ -81,7 +81,7 @@ function makeStaticJob(filename?: string, document?: CaptionDocument): Job {
 }
 
 export async function createJob(file: File): Promise<Job> {
-  if (IS_STATIC_DEMO) {
+  if (IS_BROWSER_MODE) {
     await new Promise((resolve) => setTimeout(resolve, 450));
     return makeStaticJob(file.name);
   }
@@ -93,7 +93,7 @@ export async function createJob(file: File): Promise<Job> {
 }
 
 export async function getJob(id: string): Promise<Job> {
-  if (IS_STATIC_DEMO) {
+  if (IS_BROWSER_MODE) {
     const found = lsJobs().find((j) => j.id === id);
     if (found) return found;
     return staticJob && staticJob.id === id ? staticJob : makeStaticJob();
@@ -108,7 +108,7 @@ export interface StorageInfo { count: number; used_bytes: number; limit_bytes: n
 export interface UsageInfo { org_id: string; events: number; wcag_minutes: number; credits: number; }
 
 export async function getUsage(): Promise<UsageInfo | null> {
-  if (IS_STATIC_DEMO) return null;
+  if (IS_BROWSER_MODE) return null;
   try {
     const res = await fetch(`${WORKER_URL}/api/usage`, { cache: "no-store", headers: authHeaders() });
     return res.ok ? res.json() : null;
@@ -118,7 +118,7 @@ export async function getUsage(): Promise<UsageInfo | null> {
 }
 
 export async function getStorage(): Promise<StorageInfo | null> {
-  if (IS_STATIC_DEMO) return { count: 0, used_bytes: 0, limit_bytes: 200 * 1024 * 1024, over_limit: false };
+  if (IS_BROWSER_MODE) return { count: 0, used_bytes: 0, limit_bytes: 200 * 1024 * 1024, over_limit: false };
   try {
     const res = await fetch(`${WORKER_URL}/api/storage`, { cache: "no-store", headers: authHeaders() });
     return res.ok ? res.json() : null;
@@ -128,22 +128,22 @@ export async function getStorage(): Promise<StorageInfo | null> {
 }
 
 export async function listJobs(): Promise<Job[]> {
-  if (IS_STATIC_DEMO) return lsJobs();
+  if (IS_BROWSER_MODE) return lsJobs();
   const res = await fetch(`${WORKER_URL}/api/jobs`, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się pobrać listy materiałów (${res.status}).`);
   return res.json();
 }
 
 export async function deleteJob(id: string): Promise<void> {
-  if (IS_STATIC_DEMO) { lsSave(lsJobs().filter((j) => j.id !== id)); return; }
+  if (IS_BROWSER_MODE) { lsSave(lsJobs().filter((j) => j.id !== id)); return; }
   const res = await fetch(`${WORKER_URL}/api/jobs/${id}`, { method: "DELETE", headers: authHeaders() });
   if (!res.ok) throw new Error(`Nie udało się usunąć materiału (${res.status}).`);
 }
 
 export async function importJob(filename: string, document: CaptionDocument): Promise<Job> {
-  if (IS_STATIC_DEMO) {
+  if (IS_BROWSER_MODE) {
     const now = new Date().toISOString();
-    const job: Job = { id: newId(), org_id: "demo", status: "done" as Job["status"], filename, created_at: now, updated_at: now, result: finalizeDoc(document) };
+    const job: Job = { id: newId(), org_id: "local", status: "done" as Job["status"], filename, created_at: now, updated_at: now, result: finalizeDoc(document) };
     lsUpsert(job);
     return job;
   }
@@ -159,13 +159,13 @@ export async function importJob(filename: string, document: CaptionDocument): Pr
 }
 
 export async function updateDocument(id: string, doc: CaptionDocument): Promise<Job> {
-  if (IS_STATIC_DEMO) {
+  if (IS_BROWSER_MODE) {
     const all = lsJobs();
     const ex = all.find((j) => j.id === id);
     const now = new Date().toISOString();
     const job: Job = {
-      id, org_id: "demo", status: "done" as Job["status"],
-      filename: ex?.filename ?? "material-demo",
+      id, org_id: "local", status: "done" as Job["status"],
+      filename: ex?.filename ?? "material",
       created_at: ex?.created_at ?? now, updated_at: now,
       result: finalizeDoc(doc),
     };
@@ -186,7 +186,7 @@ export function exportUrl(id: string, fmt: ExportFmt): string {
 }
 
 export async function getHealth(): Promise<HealthInfo | null> {
-  if (IS_STATIC_DEMO) return staticHealth();
+  if (IS_BROWSER_MODE) return staticHealth();
   try {
     const res = await fetch(`${WORKER_URL}/health`, { cache: "no-store", headers: authHeaders() });
     return res.ok ? res.json() : null;
@@ -196,12 +196,12 @@ export async function getHealth(): Promise<HealthInfo | null> {
 }
 
 export async function checkHealth(): Promise<boolean> {
-  if (IS_STATIC_DEMO) return true;
+  if (IS_BROWSER_MODE) return true;
   return (await getHealth()) !== null;
 }
 
 export async function setConfig(body: ConfigUpdate): Promise<HealthInfo> {
-  if (IS_STATIC_DEMO) return staticHealth();
+  if (IS_BROWSER_MODE) return staticHealth();
   const res = await fetch(`${WORKER_URL}/api/config`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },

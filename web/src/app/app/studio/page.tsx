@@ -5,10 +5,10 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createJob, getJob, importJob, listJobs, IS_STATIC_DEMO } from "@/lib/api";
+import { createJob, getJob, importJob, listJobs, IS_BROWSER_MODE } from "@/lib/api";
 import type { Job } from "@/lib/contract";
 import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
-import { DEMO_DOC } from "@/lib/demoDoc";
+import { SAMPLE_DOC } from "@/lib/sampleDoc";
 import { probeAudioPresence } from "@/lib/audioProbe";
 import { parseSubtitles } from "@/lib/importSubs";
 import { transcribeWithProvider } from "@/lib/cloudAsr";
@@ -31,7 +31,7 @@ import TranscriptTable from "@/components/result/TranscriptTable";
 import CaptionsTable from "@/components/result/CaptionsTable";
 import SpeakersSounds from "@/components/result/SpeakersSounds";
 import ProjectCard from "@/components/dashboard/ProjectCard";
-import { DEMO_PROJECTS, type DemoProject } from "@/lib/mockData";
+import { SAMPLE_PROJECTS, type SampleProject } from "@/lib/sampleData";
 import { fadeUp } from "@/lib/motion";
 
 type Phase = "idle" | "uploading" | "processing" | "done" | "error";
@@ -58,19 +58,19 @@ function UsageEstimate({ durationMs }: { durationMs: number }) {
   return (
     <motion.div variants={fadeUp} className="mt-4 rounded-xl border border-hair/70 bg-brand-50/30 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="sparkles" size={16} className="text-brand-600" /> Szacunek (demo)</h4>
+        <h4 className="inline-flex items-center gap-2 text-sm font-medium text-graphite"><Icon name="sparkles" size={16} className="text-brand-600" /> Szacunek kosztu</h4>
         <span className="text-xs text-muted">~{minutes} min materiału</span>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {feats.map((f) => <span key={f} className="rounded-full bg-white px-2 py-0.5 text-[11px] text-graphite ring-1 ring-hair/60">{f}</span>)}
       </div>
-      <p className="mt-2 text-sm text-graphite">Szacowany koszt: <strong className="tnum">≈ {credits} kredytów</strong>. <span className="text-muted">W trybie demo kredyty nie są pobierane.</span></p>
+      <p className="mt-2 text-sm text-graphite">Szacowany koszt: <strong className="tnum">≈ {credits} kredytów</strong>. <span className="text-muted">Na tym etapie nic nie jest pobierane.</span></p>
       <p className="mt-1 text-xs text-muted">Ścieżka automatyczna: {DEFAULT_PROCESSING_DECISION.path.slice(0, 4).join(" → ")}.</p>
     </motion.div>
   );
 }
 
-function jobToCard(j: Job): DemoProject {
+function jobToCard(j: Job): SampleProject {
   const w = j.result?.wcag;
   const score = w ? Math.max(0, 100 - w.stats.error_count * 15 - w.stats.warning_count * 4) : 0;
   const t = j.result ? Math.round(j.result.media.duration_ms / 1000) : 0;
@@ -111,7 +111,7 @@ function StudioInner() {
     if (!f) { setFile(null); return; }
     const okType = f.type.startsWith("audio/") || f.type.startsWith("video/") || /\.(mp3|wav|m4a|mp4|mov|mkv|aac|ogg|flac|webm)$/i.test(f.name);
     if (!okType) { setFile(null); setError("Nieobsługiwany format. Wgraj audio lub wideo (MP3, WAV, M4A, MP4, MOV...)."); return; }
-    if (f.size > MAX_MB * 1024 * 1024) { setFile(null); setError(`Plik za duży (limit ${MAX_MB} MB w demo).`); return; }
+    if (f.size > MAX_MB * 1024 * 1024) { setFile(null); setError(`Plik za duży (limit ${MAX_MB} MB).`); return; }
     setError(null); setFile(f); setAudioWarn(null);
     probeAudioPresence(f).then((r) => {
       if (r.ok && !r.hasAudio) setAudioWarn("Wygląda na to, że materiał nie ma słyszalnego dźwięku — napisy mogą nie powstać. Sprawdź, czy plik ma ścieżkę audio.");
@@ -168,15 +168,15 @@ function StudioInner() {
 
   async function handleRun() {
     if (!file && sourceUrl.trim()) {
-      setError("Pobieranie napisów z linku działa w trybie serwerowym (worker z yt-dlp pobiera istniejące napisy). W wersji demo w przeglądarce wgraj plik audio/wideo albo zaimportuj SRT/VTT.");
+      setError("Pobieranie napisów z linku wymaga wersji serwerowej. W przeglądarce wgraj plik audio/wideo albo zaimportuj SRT/VTT.");
       return;
     }
     if (!file) return;
-    // Klucz usera -> realna transkrypcja w przeglądarce (działa też na statycznym demo).
+    // Klucz usera -> realna transkrypcja w przeglądarce (działa też w trybie przeglądarkowym).
     if (getUserAsr()) { await runCloud(file); return; }
-    // Demo (Vercel, bez workera): przetwórz REALNIE wybrany plik w przeglądarce (Whisper),
-    // a nie podstawiaj przykładu. Przykład jest pod osobnym przyciskiem „Uruchom demo".
-    if (IS_STATIC_DEMO) { await runLocal(file); return; }
+    // Tryb przeglądarkowy (Vercel, bez workera): przetwórz REALNIE wybrany plik w przeglądarce (Whisper),
+    // a nie podstawiaj przykładu. Przykład jest pod osobnym przyciskiem „Wypróbuj na przykładzie".
+    if (IS_BROWSER_MODE) { await runLocal(file); return; }
     setError(null); setJob(null); setSample(false); setPhase("uploading");
     try {
       const created = await createJob(file);
@@ -192,7 +192,7 @@ function StudioInner() {
     } catch (e) { setError(e instanceof Error ? e.message : "Nieznany błąd."); setPhase("error"); }
   }
   const ps = pipe(phase);
-  const estMs = sample ? DEMO_DOC.media.duration_ms : file ? (file.size / (1024 * 1024)) * 60000 : 0;
+  const estMs = sample ? SAMPLE_DOC.media.duration_ms : file ? (file.size / (1024 * 1024)) * 60000 : 0;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -218,8 +218,8 @@ function StudioInner() {
 
             {!sample && !file && (
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
-                <div className="flex items-center gap-2 text-sm text-graphite"><Icon name="sparkles" size={18} className="text-brand-600" /> Nie masz pliku? Uruchom pełne demo na przykładowym materiale.</div>
-                <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Uruchom demo na przykładzie</Button>
+                <div className="flex items-center gap-2 text-sm text-graphite"><Icon name="sparkles" size={18} className="text-brand-600" /> Nie masz pliku? Wypróbuj na przykładowym materiale.</div>
+                <Button variant="secondary" icon="play" onClick={runSample} disabled={busy}>Wypróbuj na przykładzie</Button>
               </div>
             )}
             <details open className="mt-3 rounded-xl border border-hair/70 bg-white/50">
@@ -237,7 +237,7 @@ function StudioInner() {
                   className="focusring min-w-0 flex-1 rounded-xl border border-hair bg-white px-3 py-2.5 text-sm text-graphite placeholder:text-muted/70" />
                 <Button variant="secondary" icon="external" onClick={handleRun} disabled={!sourceUrl.trim() || busy}>Pobierz napisy z linku</Button>
               </div>
-              <p className="mt-2 text-xs text-muted">Plan orkiestratora: sprawdzenie istniejących napisów → import transkryptu → ASR tylko gdy potrzebny. Demo nie pobiera materiałów z platform i nie obchodzi regulaminów.</p>
+              <p className="mt-2 text-xs text-muted">Kolejność przetwarzania: sprawdzenie istniejących napisów → import transkryptu → transkrypcja tylko gdy potrzebna. Aplikacja nie pobiera materiałów z platform i nie obchodzi regulaminów.</p>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hair/70 bg-white/60 px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-graphite"><Icon name="captions" size={18} className="text-brand-600" /> Masz gotowe napisy? Zaimportuj i dopracuj pod WCAG.</div>
@@ -250,7 +250,7 @@ function StudioInner() {
             {sample && !file && (
               <div className="mt-4 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-4 py-3">
                 <span className="grid h-10 w-10 place-items-center rounded-lg bg-brand-100 text-brand-700"><Icon name="sparkles" size={18} /></span>
-                <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-graphite">{DEMO_DOC.media.filename}</p><p className="text-xs text-muted">materiał przykładowy · tryb demo (mock)</p></div>
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-graphite">{SAMPLE_DOC.media.filename}</p><p className="text-xs text-muted">materiał przykładowy</p></div>
                 <Badge tone="info">przykład</Badge>
               </div>
             )}
@@ -262,7 +262,7 @@ function StudioInner() {
               </div>
             )}
 
-            {(file || sample || sourceUrl.trim()) && <UsageEstimate durationMs={estMs || DEMO_DOC.media.duration_ms} />}
+            {(file || sample || sourceUrl.trim()) && <UsageEstimate durationMs={estMs || SAMPLE_DOC.media.duration_ms} />}
             {audioWarn && (
               <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/30 bg-warn/5 px-3 py-2.5">
                 <Icon name="alert" size={16} className="mt-0.5 shrink-0 text-warn" />
@@ -272,7 +272,7 @@ function StudioInner() {
 
             {(file || sample) && (<>
             <div className="mt-5 flex flex-wrap items-center gap-3">
-              <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || (workerUp === false && !IS_STATIC_DEMO && !hasKey)} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
+              <Button onClick={handleRun} disabled={(!file && !sourceUrl.trim()) || busy || (workerUp === false && !IS_BROWSER_MODE && !hasKey)} loading={busy && !sample} icon={busy ? undefined : "play"}>{busy && !sample ? "Przetwarzanie…" : "Przetwórz materiał"}</Button>
               <Button variant="secondary" onClick={() => file && runLocal(file)} disabled={!file || busy} icon="sparkles" title="Transkrypcja Whisper w Twojej przeglądarce — bez API, bez wysyłania pliku na serwer. Model wybierasz obok; pobiera się raz.">Transkrybuj bez API (w przeglądarce)</Button>
               <div className="inline-flex flex-wrap items-center gap-1.5 rounded-xl border border-hair bg-white p-1" role="group" aria-label="Silnik AI — tryb">
                 {ENGINE_MODES.map((m) => (
@@ -332,7 +332,7 @@ function StudioInner() {
               )}
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">{myJobs.length > 0 ? "Przykłady" : ""}</p>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {DEMO_PROJECTS.map((pr) => <ProjectCard key={pr.id} p={pr} />)}
+                {SAMPLE_PROJECTS.map((pr) => <ProjectCard key={pr.id} p={pr} />)}
               </div>
             </motion.div>
           </Section>

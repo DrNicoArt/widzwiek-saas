@@ -1,11 +1,10 @@
-// DEMO DATA (UI) — przykładowy CaptionDocument zgodny z kontraktem, lustrzany do wyniku
-// mock pipeline workera. Pozwala podstronom (Napisy, Mówcy, Eksporty, Raport) działać
-// nawet gdy worker jest offline. Wyraźnie oznaczone jako dane demonstracyjne.
+// Dane przykładowe (UI) — CaptionDocument zgodny z kontraktem, lustrzany do wyniku
+// pipeline'u workera. Pozwala podstronom (Napisy, Mówcy, Eksporty, Raport) działać
+// nawet gdy worker jest offline. Wyraźnie oznaczone jako dane przykładowe.
 import type { CaptionDocument } from "./contract";
 
-export const IS_DEMO_DATA = true;
 
-export const DEMO_DOC: CaptionDocument = {
+export const SAMPLE_DOC: CaptionDocument = {
   schema_version: "1.0",
   media: { filename: "konferencja_dostepnosc_2024.mp4", source_kind: "video", duration_ms: 30000, language: "pl" },
   speakers: [
@@ -33,8 +32,8 @@ export const DEMO_DOC: CaptionDocument = {
   },
   meta: {
     generated_at: "2024-06-02T10:00:00Z",
-    pipeline: { asr: "mock", diarization: "mock", sound_events: "mock" },
-    decision: { strategy: "automatic", transcript_source: "demo", no_api_first: true, fallback_used: true, fallbacks: ["faster-whisper-local -> demo-transcript"], notes: ["Demo: przykładowy transkrypt, bez pliku i bez kluczy API."] },
+    pipeline: { asr: "auto", diarization: "auto", sound_events: "auto" },
+    decision: { strategy: "automatic", transcript_source: "sample", no_api_first: true, fallback_used: true, fallbacks: ["faster-whisper-local -> transkrypt-przykładowy"], notes: ["Przykładowy transkrypt — bez pliku i bez kluczy API."] },
     quality: { transcription: 0.74, diarization: 0.62, sound_events: 0.55, segmentation: 0.9, wcag: 0.94, completeness: 0.9, overall: 0.78 },
   },
 };

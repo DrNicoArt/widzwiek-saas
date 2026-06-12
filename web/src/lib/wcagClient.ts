@@ -1,7 +1,7 @@
 // KLIENTOWA walstwa PODGLĄDU/OFFLINE (nie autorytet) — lustro worker/widzwiek/wcag/validator.py.
-// Autorytetem WCAG jest worker. Tu liczymy raport dla statycznego demo i szybkiego podglądu.
+// Autorytetem WCAG jest worker. Tu liczymy raport dla trybu przeglądarkowego i szybkiego podglądu.
 // Progi pochodzą z ./wcagRuleset.ts (lustro contracts/wcag_ruleset.json). Patrz docs/PLATFORM_AUDIT.md.
-// i orchestrator.apply_quality. Dzięki temu statyczne demo (Vercel, bez workera/API) realnie
+// i orchestrator.apply_quality. Dzięki temu tryb przeglądarkowy (Vercel, bez workera/API) realnie
 // liczy raport WCAG i Quality Score dla dowolnych napisów (import, edycja, sample).
 import type { CaptionDocument, Cue, WcagIssue, WcagReport } from "./contract";
 import {

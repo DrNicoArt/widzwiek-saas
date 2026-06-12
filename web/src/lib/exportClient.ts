@@ -1,5 +1,5 @@
 // Kliencki eksport SRT/VTT z CaptionDocument — lustro logiki workera (export/srt.py, vtt.py).
-// Pozwala pobrać napisy w demo bez uruchomionego workera. Pliki generowane w przeglądarce.
+// Pozwala pobrać napisy w przeglądarce bez uruchomionego workera. Pliki generowane w przeglądarce.
 import type { CaptionDocument } from "./contract";
 
 const COLOR_CSS: Record<string, string> = { white: "#ffffff", yellow: "#ffff00", cyan: "#00ffff", green: "#00ff00" };

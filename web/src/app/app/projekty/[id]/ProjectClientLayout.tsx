@@ -59,7 +59,7 @@ export default function ProjectLayout({ children }: { children: ReactNode }) {
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-medium uppercase tracking-wider text-brand-600">Materiał</p>
           <h1 className="truncate text-xl font-medium text-graphite">{loading ? "Wczytywanie…" : found ? title : "Materiał nieznany"}</h1>
-          <p className="text-xs text-muted">{meta.length ? meta.join(" · ") : (real ? "materiał wgrany (edytowalny)" : "materiał przykładowy (demo)")}</p>
+          <p className="text-xs text-muted">{meta.length ? meta.join(" · ") : (real ? "materiał wgrany (edytowalny)" : "materiał przykładowy")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {found && <Badge tone={proc.tone} icon={proc.tone === "ok" ? "checkCircle" : proc.tone === "err" ? "alert" : "clock"}>{proc.label}</Badge>}
