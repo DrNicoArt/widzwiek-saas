@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Widźwięk — napisy dostępnościowe zgodne z WCAG 2.1 AA">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F1F6FC"/>
+    </linearGradient>
+    <linearGradient id="brandToCoral" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0057A8"/>
+      <stop offset="0.55" stop-color="#1F6FBE"/>
+      <stop offset="1" stop-color="#FB5E26"/>
+    </linearGradient>
+    <radialGradient id="glowBlue" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#0057A8" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#0057A8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowCoral" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FB5E26" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#FB5E26" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- tło -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1050" cy="120" r="420" fill="url(#glowBlue)"/>
+  <circle cx="1120" cy="540" r="360" fill="url(#glowCoral)"/>
+
+  <!-- sygnet: oko + fala (po prawej) -->
+  <g transform="translate(905,315)" opacity="0.95">
+    <ellipse cx="0" cy="0" rx="150" ry="96" fill="none" stroke="url(#brandToCoral)" stroke-width="6"/>
+    <circle cx="0" cy="0" r="46" fill="none" stroke="#0057A8" stroke-width="6"/>
+    <circle cx="0" cy="0" r="16" fill="#FB5E26"/>
+    <!-- równoważnik dźwięku w źrenicy -->
+    <g stroke="#0057A8" stroke-width="5" stroke-linecap="round" opacity="0.65" transform="translate(0,140)">
+      <line x1="-44" y1="0" x2="-44" y2="-22"/>
+      <line x1="-22" y1="0" x2="-22" y2="-40"/>
+      <line x1="0"   y1="0" x2="0"   y2="-16"/>
+      <line x1="22"  y1="0" x2="22"  y2="-34"/>
+      <line x1="44"  y1="0" x2="44"  y2="-26"/>
+    </g>
+  </g>
+
+  <!-- fala dźwięku przez dół -->
+  <path d="M0 520 Q 75 470 150 520 T 300 520 T 450 520 T 600 520 T 750 520 T 900 520 T 1050 520 T 1200 520"
+        fill="none" stroke="url(#brandToCoral)" stroke-width="4" opacity="0.55"/>
+
+  <!-- treść -->
+  <text x="80" y="150" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22" letter-spacing="3" fill="#0057A8" font-weight="700">SUBROSAI</text>
+
+  <text x="78" y="265" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="92" font-weight="800" letter-spacing="-1">
+    <tspan fill="#4E8FD6">[</tspan><tspan fill="#151515">widźwięk</tspan><tspan fill="#4E8FD6">]</tspan>
+  </text>
+
+  <text x="82" y="330" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="34" font-weight="600" fill="#151515">Napisy dostępnościowe zgodne z WCAG 2.1 AA</text>
+  <text x="82" y="372" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="25" font-style="italic" fill="#5F6670">zobacz to, co inni słyszą</text>
+
+  <!-- pigułka różnicy captions vs subtitles -->
+  <g transform="translate(82,420)">
+    <rect x="0" y="0" rx="22" ry="22" width="560" height="44" fill="#EAF2FB" stroke="#AECEEF" stroke-width="1"/>
+    <circle cx="26" cy="22" r="7" fill="#FB5E26"/>
+    <text x="46" y="29" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="19" fill="#084C8D" font-weight="600">Captions, nie subtitles: mowa · mówcy · dźwięki · raport</text>
+  </g>
+
+  <!-- pasek dowodu wartości -->
+  <text x="82" y="520" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="18" fill="#5F6670">Wgraj materiał → transkrypcja + mówcy + dźwięki → eksport SRT/VTT + raport zgodności</text>
+</svg>
