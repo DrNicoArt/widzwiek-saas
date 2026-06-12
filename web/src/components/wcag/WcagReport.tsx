@@ -23,6 +23,9 @@ const RULES: { code: string; label: string; icon: IconName }[] = [
 export default function WcagReport({ report }: { report: Report }) {
   const score = scoreOf(report);
   const ok = report.compliant;
+  const problems = report.stats.error_count + report.stats.warning_count;
+  const jakosc = score >= 90 ? "Bardzo dobra" : score >= 75 ? "Dobra" : score >= 50 ? "Do przeglądu" : "Wymaga pracy";
+  const naklad = report.stats.error_count === 0 && report.stats.warning_count <= 2 ? "niski" : report.stats.error_count <= 2 ? "średni" : "wysoki";
   const C = 2 * Math.PI * 52;
   const offset = C * (1 - score / 100);
   const ring = ok ? "#1F7A4D" : "#B42318";
@@ -83,6 +86,15 @@ export default function WcagReport({ report }: { report: Report }) {
                 <div className={`tnum text-2xl font-medium ${s.tone === "err" ? "text-err" : s.tone === "warn" ? "text-warn" : s.tone === "ok" ? "text-ok" : "text-brand-700"}`}>{s.value}</div>
               </div>
             ))}
+          </div>
+          <div className="mt-4 rounded-xl border border-hair/60 bg-white px-4 py-3">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">Jakość w skrócie</p>
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+              <div className="flex justify-between gap-3"><dt className="text-muted">Jakość ogólna</dt><dd className="font-medium text-graphite">{jakosc}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-muted">Zgodność WCAG</dt><dd className="font-medium text-graphite">{score}%</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-muted">Nakład ręcznej korekty</dt><dd className="font-medium text-graphite">{naklad}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-muted">Wykryte problemy</dt><dd className="font-medium text-graphite">{problems}</dd></div>
+            </dl>
           </div>
         </div>
       </div>

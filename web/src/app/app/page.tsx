@@ -23,6 +23,7 @@ const score = Math.max(0, 100 - DEMO_DOC.wcag.stats.error_count * 15 - DEMO_DOC.
 
 export default function Przeglad() {
   const [stats, setStats] = useState(DEMO_STATS);
+  const [value, setValue] = useState<{ minutes: number; projects: number; issues: number; savings: number } | null>(null);
   useEffect(() => {
     listJobs().then((jobs: Job[]) => {
       if (!jobs || jobs.length === 0) return;
@@ -35,6 +36,10 @@ export default function Przeglad() {
         { label: "Zgodne z WCAG", value: ok, icon: "checkCircle" },
         { label: "Do poprawy", value: review, icon: "alert" },
       ]);
+      const done = jobs.filter((j) => j.result);
+      const minutes = done.reduce((a, j) => a + Math.max(1, Math.ceil((j.result!.media.duration_ms || 0) / 60000)), 0);
+      const issues = done.reduce((a, j) => a + j.result!.wcag.stats.error_count + j.result!.wcag.stats.warning_count, 0);
+      setValue({ minutes, projects: jobs.length, issues, savings: minutes * 10 });
     }).catch(() => {});
   }, []);
   return (
@@ -75,6 +80,22 @@ export default function Przeglad() {
             tone={s.label.includes("poprawy") ? "warn" : s.label.includes("Zgodne") ? "ok" : "info"} />
         ))}
       </motion.div>
+
+      {value && value.projects > 0 && (
+        <motion.div initial="hidden" whileInView="show" viewport={inView} variants={fadeUp}
+          className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-ok/30 bg-ok/5 p-5">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted">Wartość, którą już uzyskałeś</p>
+            <p className="mt-1 text-2xl font-medium text-graphite tnum">≈ {value.savings} zł zaoszczędzone</p>
+            <p className="text-xs text-muted">vs ręczne napisy ~10 zł/min · {value.minutes} min przetworzonego materiału</p>
+          </div>
+          <div className="flex gap-6 text-center">
+            <div><div className="tnum text-xl font-medium text-graphite">{value.projects}</div><div className="text-xs text-muted">projekty</div></div>
+            <div><div className="tnum text-xl font-medium text-graphite">{value.minutes}</div><div className="text-xs text-muted">minuty</div></div>
+            <div><div className="tnum text-xl font-medium text-graphite">{value.issues}</div><div className="text-xs text-muted">problemy WCAG</div></div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Skrót raportu WCAG + ostatnie projekty */}
       <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr]">

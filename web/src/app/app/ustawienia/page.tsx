@@ -150,7 +150,7 @@ function UstawieniaInner() {
       <PageHeader
         icon="settings"
         title="Ustawienia"
-        desc="Strategia orkiestratora, źródła transkryptu, dźwięki niewerbalne i status systemu. Szczegóły providerów są ukryte w trybie zaawansowanym."
+        desc="Jakość i przetwarzanie, dźwięki, format napisów, plan i bezpieczeństwo — wszystko w jednym miejscu. Bez technicznego żargonu."
       />
 
       <div className="flex flex-col gap-6 md:flex-row">
