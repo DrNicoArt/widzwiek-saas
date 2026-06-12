@@ -9,7 +9,7 @@ import { StatusDot } from "@/components/ui/Badge";
 import { BRAND } from "@/lib/brand";
 import { useT } from "@/lib/i18n";
 
-const BUILD = "real-overview";
+const BUILD = "a11y-motion";
 
 export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
   const pathname = usePathname();

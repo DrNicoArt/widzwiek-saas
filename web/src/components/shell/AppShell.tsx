@@ -1,6 +1,6 @@
 "use client";
 // Cockpit: warstwa głębi (SceneBackground) + sidebar + topbar + treść. Splash, offline, poll workera.
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, MotionConfig } from "framer-motion";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { checkHealth } from "@/lib/api";
 import SceneBackground from "@/components/scene/SceneBackground";
@@ -25,6 +25,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   return (
+    <MotionConfig reducedMotion="user">
     <WorkerCtx.Provider value={workerUp}>
       <a href="#tresc" className="focusring sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white">Przejdź do treści</a>
       <SceneBackground />
@@ -39,5 +40,6 @@ export default function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
     </WorkerCtx.Provider>
+    </MotionConfig>
   );
 }
