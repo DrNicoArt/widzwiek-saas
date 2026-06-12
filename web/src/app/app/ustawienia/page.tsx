@@ -1,304 +1,128 @@
 "use client";
-// Ustawienia są user-facing: strategia i status orkiestratora najpierw, providerzy/ENV dopiero w trybie zaawansowanym.
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+// Ustawienia — jeden elegancki ekran. Mniej = więcej: jedna decyzja klienta (Silnik),
+// fakty o prywatności, klucz API schowany głęboko dla firm/developerów. Bez zakładek i telemetrii.
+import { Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import PageHeader from "@/components/shell/PageHeader";
-import { Badge, type Tone } from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import Icon, { type IconName } from "@/components/ui/Icon";
-import { fadeUp } from "@/lib/motion";
-import { getHealth, setConfig, type HealthInfo } from "@/lib/api";
+import Icon from "@/components/ui/Icon";
+import { fadeUp, stagger, inView } from "@/lib/motion";
 import { ENGINE_MODES, getEngineMode, setEngineMode, type EngineMode } from "@/lib/engineMode";
-import {
-  DEFAULT_POLICY,
-  OTHER_PROVIDER_GROUPS,
-  SOUND_EVENT_PROVIDERS,
-  TRANSCRIPT_SOURCE_PROVIDERS,
-  TRANSCRIPTION_PROVIDERS,
-  type ProviderCapabilityProfile,
-  type ProviderStatus,
-  statusLabel,
-} from "@/lib/orchestration";
+import { getUserAsr, setUserAsr } from "@/lib/userKey";
+import { ASR_PROVIDERS, type AsrProvider } from "@/lib/cloudAsr";
 
-type Mode = "mock" | "api";
-type SectionId = "ogolne" | "strategia" | "zrodla" | "ai" | "dzwieki" | "bezpieczenstwo" | "developer";
+function SettingsInner() {
+  const [mode, setMode] = useState<EngineMode>("auto");
+  const [provider, setProvider] = useState<AsrProvider>("openai");
+  const [keyInput, setKeyInput] = useState("");
+  const [hasKey, setHasKey] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-const SECTIONS: { id: SectionId; label: string; icon: IconName }[] = [
-  { id: "ogolne", label: "Ogólne", icon: "settings" },
-  { id: "ai", label: "Silnik AI", icon: "mic" },
-  { id: "dzwieki", label: "Dźwięki niewerbalne", icon: "wave" },
-  { id: "bezpieczenstwo", label: "Bezpieczeństwo", icon: "shield" },
-];
-const DEV_SECTION = { id: "developer" as SectionId, label: "Developer", icon: "plug" as IconName };
-
-function toneForStatus(status: ProviderStatus): Tone {
-  if (status === "active_demo" || status === "available" || status === "api_ready") return "ok";
-  if (status === "missing_key" || status === "placeholder" || status === "fallback_used") return "warn";
-  if (status === "failed") return "err";
-  return "neutral";
-}
-
-function Card({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
-  return (
-    <motion.div initial="hidden" animate="show" variants={fadeUp} className="rounded-2xl border border-hair/70 bg-white/80 p-5 shadow-card backdrop-blur-sm">
-      <h3 className="text-sm font-medium text-graphite">{title}</h3>
-      {desc && <p className="mt-0.5 text-xs text-muted">{desc}</p>}
-      <div className="mt-4">{children}</div>
-    </motion.div>
-  );
-}
-
-function ReadonlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="text-right text-sm font-medium text-graphite">{value}</span>
-    </div>
-  );
-}
-
-function ProviderList({ providers, compact = false }: { providers: ProviderCapabilityProfile[]; compact?: boolean }) {
-  return (
-    <div className="grid gap-2">
-      {providers.map((p) => (
-        <div key={p.id} className="rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="min-w-0 flex-1 text-sm font-medium text-graphite">{p.userLabel}</span>
-            <Badge tone={toneForStatus(p.status)}>{statusLabel(p.status)}</Badge>
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-muted">{p.cost.tier}</span>
-          </div>
-          {!compact && <p className="mt-1 text-xs text-muted">{p.note}</p>}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function UstawieniaInner() {
-  const params = useSearchParams();
-  const dev = params.get("dev") === "1";
-  const visibleSections = dev ? [...SECTIONS, DEV_SECTION] : SECTIONS;
-  const [section, setSection] = useState<SectionId>("ai");
-  const [health, setHealth] = useState<HealthInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [mode, setMode] = useState<Mode>("mock");
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("whisper-1");
-  const [showKey, setShowKey] = useState(false);
-  const [soundSensitivity, setSoundSensitivity] = useState(DEFAULT_POLICY.soundSensitivity);
-  const [relevantOnly, setRelevantOnly] = useState(DEFAULT_POLICY.addOnlyRelevantSounds);
-  const [proposeSounds, setProposeSounds] = useState(DEFAULT_POLICY.proposeSoundsBeforeExport);
-  const [requireSounds, setRequireSounds] = useState(DEFAULT_POLICY.requireSoundDescriptions);
-  const [msg, setMsg] = useState<{ tone: Tone; text: string } | null>(null);
-  const [engineMode, setEngineModeState] = useState<EngineMode>("auto");
-
-
-  const refresh = useCallback(async () => {
-    const h = await getHealth();
-    setHealth(h);
-    setLoading(false);
-    if (h) {
-      setMode((h.mode as Mode) ?? "mock");
-      if (h.transcription_model) setModel(h.transcription_model);
-    }
+  useEffect(() => {
+    setMode(getEngineMode());
+    const a = getUserAsr();
+    if (a) { setProvider(a.provider); setHasKey(true); }
   }, []);
-  useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => { setEngineModeState(getEngineMode()); }, []);
 
-  async function saveRuntimeConfig() {
-    setSaving(true); setMsg(null);
-    try {
-      const body: Record<string, string> = { pipeline_mode: mode, openai_transcription_model: model };
-      if (apiKey.trim()) body.openai_api_key = apiKey.trim();
-      const h = await setConfig(body);
-      setHealth(h);
-      setApiKey("");
-      setShowKey(false);
-      setMsg(h.ready
-        ? { tone: "ok", text: mode === "api" ? "Zapisano. Dostawca transkrypcji gotowy do testu API." : "Zapisano. Demo działa bez zewnętrznych API." }
-        : { tone: "warn", text: "Zapisano, ale live API nie jest jeszcze gotowe — sprawdź uwagi workera." });
-    } catch (e) {
-      setMsg({ tone: "err", text: e instanceof Error ? e.message : "Nie udało się zapisać." });
-    } finally { setSaving(false); }
-  }
+  function saveKey() { setUserAsr({ provider, key: keyInput }); setHasKey(!!keyInput.trim()); setSaved(true); setKeyInput(""); }
+  function clearKey() { setUserAsr(null); setHasKey(false); setSaved(false); }
 
-  const offline = !loading && health === null;
-  const statusBadges = offline ? (
-    <Badge tone="err" icon="alert">silnik offline</Badge>
-  ) : (
-    <>
-      <Badge tone={health?.mode === "api" ? "info" : "neutral"} icon="sparkles">{health?.mode === "api" ? "live API" : "demo bez API"}</Badge>
-      <Badge tone={health?.ready ? "ok" : "warn"} icon={health?.ready ? "checkCircle" : "alert"}>{health?.ready ? "system gotowy" : "wymaga konfiguracji"}</Badge>
-      <Badge tone={health?.api_key_present ? "ok" : "neutral"} icon="shield">{health?.api_key_present ? "klucz API ustawiony" : "bez kluczy"}</Badge>
-    </>
-  );
-
-  const advancedProviders = [
-    ...TRANSCRIPT_SOURCE_PROVIDERS,
-    ...TRANSCRIPTION_PROVIDERS,
-    ...SOUND_EVENT_PROVIDERS,
-    ...OTHER_PROVIDER_GROUPS,
+  const privacy = [
+    { icon: "eyeOff" as const, label: "Przetwarzanie", value: "W Twojej przeglądarce — plik nie opuszcza urządzenia" },
+    { icon: "folder" as const, label: "Twoje materiały", value: "Zapisane lokalnie, tylko u Ciebie" },
+    { icon: "shield" as const, label: "Wersja serwerowa", value: "Region UE, retencja i usuwanie — wkrótce" },
   ];
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <PageHeader
-        icon="settings"
-        title="Ustawienia"
-        desc="Jakość i przetwarzanie, dźwięki, format napisów, plan i bezpieczeństwo — wszystko w jednym miejscu. Bez technicznego żargonu."
-      />
+    <div className="mx-auto max-w-2xl">
+      <PageHeader icon="settings" title="Ustawienia" desc="Jakość, prywatność i konto — bez technicznego żargonu." />
 
-      <div className="flex flex-col gap-6 md:flex-row">
-        <nav className="flex shrink-0 gap-1 overflow-x-auto md:w-56 md:flex-col">
-          {visibleSections.map((s) => {
-            const active = section === s.id;
-            return (
-              <button key={s.id} onClick={() => setSection(s.id)} aria-current={active ? "true" : undefined}
-                className={`focusring inline-flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm transition-colors ${active ? "bg-brand-50 font-medium text-brand-700" : "text-graphite hover:bg-brand-50/60"}`}>
-                <Icon name={s.icon} size={16} className={active ? "text-brand-600" : "text-muted"} /> {s.label}
-              </button>
-            );
-          })}
-        </nav>
+      <motion.div initial="hidden" whileInView="show" viewport={inView} variants={stagger} className="space-y-5">
+        {/* Silnik — jedyna realna decyzja klienta */}
+        <motion.section variants={fadeUp} className="rounded-3xl border border-hair/70 bg-white/80 p-6 shadow-card backdrop-blur-sm">
+          <div className="mb-5 flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-600 text-white shadow-lift"><Icon name="sparkles" size={22} /></span>
+            <div>
+              <h2 className="text-base font-medium text-graphite">Silnik Widźwięk</h2>
+              <p className="text-xs text-muted">Wybierasz efekt. Resztę dobieramy sami.</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {ENGINE_MODES.map((m) => {
+              const active = mode === m.id;
+              return (
+                <button key={m.id} type="button" onClick={() => { setEngineMode(m.id); setMode(m.id); }}
+                  className={`focusring flex w-full items-center justify-between gap-4 rounded-2xl border px-4 py-3.5 text-left transition-all ${active ? "border-brand-500 bg-brand-50 shadow-ring" : "border-hair bg-white hover:border-brand-200 hover:bg-brand-50/40"}`}>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${active ? "border-brand-600 bg-brand-600 text-white" : "border-hair text-transparent"}`}><Icon name="check" size={13} /></span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-graphite">{m.label}</span>
+                      <span className="block text-xs text-muted">{m.desc}</span>
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block text-sm font-medium tabular-nums text-graphite">{m.price}</span>
+                    <span className="block text-[11px] text-muted">orientacyjnie / min</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-4 text-xs text-muted">Ceny orientacyjne — rozliczamy minuty zgodności WCAG, nie dostawcę technologii. Finalny cennik ustalimy przy uruchomieniu rozliczeń.</p>
+        </motion.section>
 
-        <div className="min-w-0 flex-1 space-y-4">
-          <div className="flex flex-wrap gap-2">{statusBadges}</div>
+        {/* Prywatność — istotne dla instytucji, w języku klienta */}
+        <motion.section variants={fadeUp} className="rounded-3xl border border-hair/70 bg-white/80 p-6 shadow-card backdrop-blur-sm">
+          <h2 className="mb-4 text-base font-medium text-graphite">Prywatność i Twoje dane</h2>
+          <ul className="space-y-3">
+            {privacy.map((f) => (
+              <li key={f.label} className="flex items-start gap-3">
+                <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"><Icon name={f.icon} size={16} /></span>
+                <span><span className="block text-sm font-medium text-graphite">{f.label}</span><span className="block text-xs text-muted">{f.value}</span></span>
+              </li>
+            ))}
+          </ul>
+        </motion.section>
 
-          {section === "ogolne" && (
-            <Card title="Ogólne" desc="Podstawowe informacje o Twoim koncie i trybie pracy.">
-              <div className="space-y-2">
-                <ReadonlyField label="Produkt" value="Widźwięk — napisy zgodne z WCAG" />
-                <ReadonlyField label="Tryb" value="Demo w przeglądarce (bez serwera)" />
+        {/* Zaawansowane — własny klucz, schowany dla firm/developerów */}
+        <motion.section variants={fadeUp}>
+          <details className="rounded-3xl border border-hair/70 bg-white/60 px-6 py-4">
+            <summary className="focusring cursor-pointer list-none text-sm font-medium text-graphite">
+              Zaawansowane — własny klucz API <span className="font-normal text-muted">(dla firm i developerów)</span>
+            </summary>
+            <div className="mt-4 grid gap-3">
+              <p className="text-xs text-muted">Domyślnie nie potrzebujesz klucza — silnik Widźwięk działa bez niego. Klucz to opcja ekspercka; zostaje na Twoim urządzeniu i nie trafia na nasz serwer.</p>
+              <label className="grid gap-1.5">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted">Dostawca</span>
+                <select value={provider} onChange={(e) => setProvider(e.target.value as AsrProvider)}
+                  className="focusring rounded-xl border border-hair bg-white px-3 py-2.5 text-sm text-graphite">
+                  {ASR_PROVIDERS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+              </label>
+              <label className="grid gap-1.5">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted">Klucz API</span>
+                <input type="password" value={keyInput} onChange={(e) => setKeyInput(e.target.value)}
+                  placeholder={hasKey ? "klucz zapisany — wpisz nowy, aby podmienić" : (ASR_PROVIDERS.find((p) => p.id === provider)?.keyHint ?? "")}
+                  autoComplete="off" spellCheck={false}
+                  className="focusring w-full rounded-xl border border-hair bg-white px-3 py-2.5 font-mono text-sm text-graphite placeholder:text-muted/70" />
+              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={saveKey} icon="check">Zapisz klucz</Button>
+                {hasKey && <Button variant="secondary" icon="x" onClick={clearKey}>Usuń klucz</Button>}
+                {saved && <span className="inline-flex items-center gap-1 text-xs text-ok"><Icon name="checkCircle" size={14} /> Zapisano w przeglądarce</span>}
               </div>
-            </Card>
-          )}
-
-          {section === "ai" && (
-            <div className="space-y-4">
-              <Card title="Silnik AI — model i orientacyjny cennik" desc="Nie podajesz żadnego klucza API. Wybierasz tryb/model — to wpływa na jakość, szybkość i cenę. Pod spodem Widźwięk sam dobiera dostawcę i rozlicza minuty zgodności WCAG.">
-                <div className="grid gap-2">
-                  {ENGINE_MODES.map((m) => (
-                    <button key={m.id} type="button" onClick={() => { setEngineMode(m.id); setEngineModeState(m.id); }}
-                      className={`focusring flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${engineMode === m.id ? "border-brand-500 bg-brand-50" : "border-hair bg-white hover:bg-slate-50"}`}>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-medium text-graphite">{m.label}</span>
-                        <span className="block text-xs text-muted">{m.desc}</span>
-                      </span>
-                      <span className="shrink-0 text-right">
-                        <span className="block text-sm font-medium tabular-nums text-graphite">{m.price}</span>
-                        <span className="block text-[11px] text-muted">orientacyjnie / min</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs text-muted">Ceny orientacyjne (TBD) — finalne stawki ustalimy przy uruchomieniu rozliczeń. Rozliczamy „minuty zgodności WCAG”, nie dostawcę. Pole klucza API zostaje wyłącznie dla firm/developerów w trybie zaawansowanym.</p>
-              </Card>
             </div>
-          )}
-
-          {section === "dzwieki" && (
-            <div className="space-y-4">
-              <Card title="Dźwięki niewerbalne" desc="Top-level capability produktu: wykryj, oceń istotność i zaproponuj opis do captions.">
-                <div className="grid gap-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-                    <span className="text-sm text-graphite">Wykrywanie dźwięków</span>
-                    <Badge tone="warn">demo / automatyczne później</Badge>
-                  </div>
-                  <label className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-                    <span className="text-sm text-graphite">Poziom czułości</span>
-                    <select value={soundSensitivity} onChange={(e) => setSoundSensitivity(e.target.value as typeof soundSensitivity)}
-                      className="focusring rounded-lg border border-hair bg-white px-2 py-1.5 text-sm text-graphite">
-                      <option value="low">niski</option>
-                      <option value="standard">standard</option>
-                      <option value="high">wysoki</option>
-                    </select>
-                  </label>
-                  {[
-                    ["Dodawaj tylko dźwięki istotne dla zrozumienia", relevantOnly, setRelevantOnly],
-                    ["Proponuj opisy dźwięków przed eksportem", proposeSounds, setProposeSounds],
-                    ["Wymagaj opisów dźwięków w raporcie WCAG", requireSounds, setRequireSounds],
-                  ].map(([label, value, setter]) => (
-                    <label key={label as string} className="flex items-center justify-between gap-3 rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-                      <span className="text-sm text-graphite">{label as string}</span>
-                      <button type="button" onClick={() => (setter as React.Dispatch<React.SetStateAction<boolean>>)((v) => !v)}
-                        className={`focusring relative h-5 w-9 rounded-full transition-colors ${value ? "bg-brand-600" : "bg-slate-300"}`}>
-                        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${value ? "left-4" : "left-0.5"}`} />
-                      </button>
-                    </label>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {section === "bezpieczenstwo" && (
-            <Card title="Bezpieczeństwo i prywatność" desc="Co dzieje się z Twoimi plikami.">
-              <div className="space-y-2">
-                <ReadonlyField label="Przetwarzanie" value="W Twojej przeglądarce — plik nie opuszcza urządzenia (tryb demo)" />
-                <ReadonlyField label="Twoje materiały" value="Zapisane lokalnie w tej przeglądarce" />
-                <ReadonlyField label="Wersja serwerowa" value="Retencja, region UE i twarde usuwanie — wkrótce" />
-              </div>
-            </Card>
-          )}
-
-          {section === "developer" && (
-            <div className="space-y-4">
-              <Card title="Developer: runtime workera" desc="Tylko dla dev/admin. To nie jest podstawowy tryb obsługi materiału.">
-                <div className="inline-flex rounded-xl border border-hair p-1">
-                  {(["mock", "api"] as Mode[]).map((m) => (
-                    <button key={m} type="button" onClick={() => setMode(m)}
-                      className={`focusring rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${mode === m ? "bg-brand-600 text-white" : "text-graphite hover:bg-brand-50"}`}>
-                      {m === "mock" ? "Demo mock" : "Live API"}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-4 grid gap-3">
-                  <label>
-                    <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted">Klucz OpenAI</span>
-                    <div className="relative">
-                      <input type={showKey ? "text" : "password"} value={apiKey} onChange={(e) => setApiKey(e.target.value)}
-                        placeholder={health?.api_key_present ? "ustawiony — wpisz nowy, aby podmienić" : "sk-..."}
-                        className="focusring w-full rounded-xl border border-hair bg-white px-3 py-2.5 pr-10 font-mono text-sm text-graphite" />
-                      <button type="button" onClick={() => setShowKey((s) => !s)} aria-label={showKey ? "Ukryj klucz" : "Pokaż klucz"}
-                        className="focusring absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted hover:text-graphite">
-                        <Icon name={showKey ? "eyeOff" : "search"} size={16} />
-                      </button>
-                    </div>
-                  </label>
-                  <label>
-                    <span className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted">Model transkrypcji</span>
-                    <input value={model} onChange={(e) => setModel(e.target.value)}
-                      className="focusring w-full max-w-xs rounded-xl border border-hair bg-white px-3 py-2.5 font-mono text-sm text-graphite" />
-                  </label>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <Button onClick={saveRuntimeConfig} loading={saving} disabled={offline} icon="check">Zapisz runtime</Button>
-                  {msg && <span className={`text-sm ${msg.tone === "ok" ? "text-ok" : msg.tone === "err" ? "text-err" : msg.tone === "warn" ? "text-warn" : "text-brand-700"}`}>{msg.text}</span>}
-                </div>
-                {health?.notes?.length ? (
-                  <ul className="mt-4 space-y-1 text-xs text-muted">
-                    {health.notes.map((n, i) => <li key={i}>• {n}</li>)}
-                  </ul>
-                ) : null}
-              </Card>
-              <Card title="Developer: wszystkie provider capabilities" desc="Dokumentacyjna lista adapterów. Placeholdery nie wykonują live requestów.">
-                <ProviderList providers={advancedProviders} compact />
-              </Card>
-            </div>
-          )}
-        </div>
-      </div>
+          </details>
+        </motion.section>
+      </motion.div>
     </div>
   );
 }
 
 export default function Ustawienia() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-5xl py-10 text-sm text-muted">Wczytywanie ustawień…</div>}>
-      <UstawieniaInner />
+    <Suspense fallback={<div className="mx-auto max-w-2xl py-10 text-sm text-muted">Wczytywanie…</div>}>
+      <SettingsInner />
     </Suspense>
   );
 }
