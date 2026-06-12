@@ -50,6 +50,8 @@ class Settings:
     local_asr_model: str = os.getenv("WIDZWIEK_LOCAL_ASR_MODEL", "small")
     local_asr_compute_type: str = os.getenv("WIDZWIEK_LOCAL_ASR_COMPUTE_TYPE", "int8")
     prefer_platform_captions: bool = os.getenv("WIDZWIEK_PREFER_PLATFORM_CAPTIONS", "1") != "0"
+    # Gdy URL nie ma napisów: pobierz audio i wykonaj transkrypcję (ASR). 1=wł (domyślnie).
+    url_asr_fallback: bool = os.getenv("WIDZWIEK_URL_ASR_FALLBACK", "1") != "0"
     enable_sound_events: bool = os.getenv("WIDZWIEK_ENABLE_SOUND_EVENTS", "1") != "0"
 
     admin_token: str = os.getenv("WIDZWIEK_ADMIN_TOKEN", "")  # gdy ustawiony: /api/config wymaga naglowka X-Admin-Token

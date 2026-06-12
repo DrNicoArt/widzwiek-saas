@@ -92,6 +92,21 @@ export async function createJob(file: File): Promise<Job> {
   return res.json();
 }
 
+// URL -> worker: najpierw napisy z platformy, a jeśli ich brak, worker pobiera audio i transkrybuje (ASR).
+// W trybie przeglądarkowym niewykonalne (brak yt-dlp / nie pobieramy z YouTube w kliencie).
+export async function createUrlJob(url: string): Promise<Job> {
+  if (IS_BROWSER_MODE) {
+    throw new Error("Przetwarzanie z linku wymaga uruchomionego workera (pobranie audio + transkrypcja). W przeglądarce wgraj plik audio/wideo albo zaimportuj SRT/VTT.");
+  }
+  const res = await fetch(`${WORKER_URL}/api/jobs/url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) throw new Error(`Worker zwrócił błąd ${res.status} przy przetwarzaniu linku.`);
+  return res.json();
+}
+
 export async function getJob(id: string): Promise<Job> {
   if (IS_BROWSER_MODE) {
     const found = lsJobs().find((j) => j.id === id);

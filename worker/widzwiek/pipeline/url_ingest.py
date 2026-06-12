@@ -16,6 +16,10 @@ from dataclasses import dataclass, field
 from .base import SoundEvent, SpeechSegment
 
 
+class NoCaptionsAvailable(RuntimeError):
+    """Brak napisów/auto-captionów dla URL — sygnał do fallbacku na pobranie audio + ASR."""
+
+
 @dataclass
 class URLCaptionIngestResult:
     title: str
@@ -59,11 +63,11 @@ def ingest_url_captions(url: str, languages: str = "pl,en,*") -> URLCaptionInges
             raise RuntimeError(f"Nie udało się pobrać napisów z URL: {err}")
         subtitle = _find_subtitle(tmp)
         if not subtitle:
-            raise RuntimeError("Nie znaleziono dostępnych napisów ani auto-captionów dla tego URL.")
+            raise NoCaptionsAvailable("Nie znaleziono dostępnych napisów ani auto-captionów dla tego URL.")
         text = open(subtitle, encoding="utf-8", errors="ignore").read()
         segments, sounds = parse_subtitle_text(text)
         if not segments and not sounds:
-            raise RuntimeError("Pobrane napisy nie zawierają segmentów możliwych do zaimportowania.")
+            raise NoCaptionsAvailable("Pobrane napisy nie zawierają segmentów możliwych do zaimportowania.")
         return URLCaptionIngestResult(
             title=os.path.basename(subtitle),
             filename=os.path.basename(subtitle),
@@ -125,3 +129,33 @@ def parse_subtitle_text(text: str) -> tuple[list[SpeechSegment], list[SoundEvent
         else:
             speech.append(SpeechSegment(start_ms, end_ms, caption, confidence=0.72, source="platform-captions"))
     return speech, sounds
+
+
+def download_url_audio(url: str, timeout: int = 300) -> tuple[str, str]:
+    """Pobiera audio z URL (yt-dlp -x) do katalogu tymczasowego; zwraca (audio_path, title).
+    Wywołujący usuwa katalog nadrzędny po użyciu.
+    UWAGA: pobieranie mediów z platform może podlegać ich regulaminom — używać świadomie i zgodnie z prawem.
+    """
+    if not yt_dlp_available():
+        raise RuntimeError("Brak yt-dlp. Zainstaluj zależności workera (`pip install -r requirements.txt`).")
+    tmp = tempfile.mkdtemp(prefix="wz_url_")
+    out_template = os.path.join(tmp, "%(id)s.%(ext)s")
+    cmd = [
+        "yt-dlp", "-x", "--audio-format", "mp3", "--audio-quality", "0",
+        "--no-playlist", "-o", out_template, url,
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    if proc.returncode != 0:
+        shutil.rmtree(tmp, ignore_errors=True)
+        err = (proc.stderr or proc.stdout or "").strip()[-700:]
+        raise RuntimeError(f"Nie udało się pobrać audio z URL: {err}")
+    audio = None
+    for name in os.listdir(tmp):
+        if name.lower().endswith((".mp3", ".m4a", ".webm", ".opus", ".wav")):
+            audio = os.path.join(tmp, name)
+            break
+    if not audio:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise RuntimeError("Pobrano plik, ale nie znaleziono audio do transkrypcji.")
+    title = os.path.splitext(os.path.basename(audio))[0]
+    return audio, title

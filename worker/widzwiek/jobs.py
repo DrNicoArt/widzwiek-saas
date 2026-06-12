@@ -13,7 +13,7 @@ from .config import settings
 from .contracts import CaptionDocument, Cue, CueKind, Job, JobStatus
 from .pipeline import formatter, run_pipeline
 from .pipeline.runner import run_pipeline_from_segments
-from .pipeline.url_ingest import ingest_url_captions
+from .pipeline.url_ingest import ingest_url_captions, NoCaptionsAvailable, download_url_audio
 from .wcag import validate
 from . import usage
 
@@ -102,15 +102,30 @@ class JobStore:
         """URL -> istniejące napisy/auto captions -> CaptionDocument bez płatnego API."""
         self._touch(job, JobStatus.processing)
         try:
-            ingest = ingest_url_captions(url)
-            doc = run_pipeline_from_segments(
-                ingest.filename,
-                ingest.segments,
-                ingest.sounds,
-                transcript_source=ingest.source,
-            )
-            doc.meta.decision.notes.extend(ingest.notes)
-            job.filename = ingest.filename
+            try:
+                ingest = ingest_url_captions(url)
+                doc = run_pipeline_from_segments(
+                    ingest.filename,
+                    ingest.segments,
+                    ingest.sounds,
+                    transcript_source=ingest.source,
+                )
+                doc.meta.decision.notes.extend(ingest.notes)
+                job.filename = ingest.filename
+            except NoCaptionsAvailable:
+                if not settings.url_asr_fallback:
+                    raise
+                audio_path, title = download_url_audio(url)
+                try:
+                    doc = run_pipeline(title or job.filename or "material", audio_path)
+                    doc.meta.decision.notes.append(
+                        "Brak napisów na platformie — pobrano audio i wykonano transkrypcję (ASR)."
+                    )
+                    if title:
+                        job.filename = title
+                finally:
+                    import shutil as _sh
+                    _sh.rmtree(os.path.dirname(audio_path), ignore_errors=True)
             job.result = doc
             self._touch(job, JobStatus.done)
             self._persist(job)

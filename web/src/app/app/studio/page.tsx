@@ -5,7 +5,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createJob, getJob, importJob, listJobs, IS_BROWSER_MODE } from "@/lib/api";
+import { createJob, createUrlJob, getJob, importJob, listJobs, IS_BROWSER_MODE } from "@/lib/api";
 import type { Job } from "@/lib/contract";
 import { buildSampleJob, estimateCredits } from "@/lib/sampleJob";
 import { SAMPLE_DOC } from "@/lib/sampleDoc";
@@ -168,7 +168,23 @@ function StudioInner() {
 
   async function handleRun() {
     if (!file && sourceUrl.trim()) {
-      setError("Pobieranie napisów z linku wymaga wersji serwerowej. W przeglądarce wgraj plik audio/wideo albo zaimportuj SRT/VTT.");
+      if (IS_BROWSER_MODE) {
+        setError("Przetwarzanie z linku wymaga uruchomionego workera (pobiera audio i transkrybuje, gdy brak napisów). W przeglądarce wgraj plik audio/wideo albo zaimportuj SRT/VTT.");
+        return;
+      }
+      setError(null); setJob(null); setSample(false); setPhase("uploading");
+      try {
+        const created = await createUrlJob(sourceUrl.trim());
+        setPhase("processing");
+        let cur = created, tries = 0;
+        while (cur.status !== "done" && cur.status !== "error" && tries < 150) {
+          await new Promise((r) => setTimeout(r, 800));
+          cur = await getJob(created.id); tries++;
+        }
+        setJob(cur);
+        if (cur.status === "error") { setError(cur.error || "Przetwarzanie zakończone błędem."); setPhase("error"); }
+        else setPhase("done");
+      } catch (e) { setError(e instanceof Error ? e.message : "Nieznany błąd."); setPhase("error"); }
       return;
     }
     if (!file) return;
@@ -233,9 +249,9 @@ function StudioInner() {
               </div>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input id="sourceUrl" value={sourceUrl} onChange={(e) => { setSourceUrl(e.target.value); setFile(null); setSample(false); }}
-                  placeholder="YouTube, TikTok, Vimeo albo publiczny URL — orkiestrator najpierw sprawdzi dostępne napisy"
+                  placeholder="YouTube, Vimeo albo publiczny URL — pobierzemy napisy, a jeśli ich nie ma, zrobimy transkrypcję"
                   className="focusring min-w-0 flex-1 rounded-xl border border-hair bg-white px-3 py-2.5 text-sm text-graphite placeholder:text-muted/70" />
-                <Button variant="secondary" icon="external" onClick={handleRun} disabled={!sourceUrl.trim() || busy}>Pobierz napisy z linku</Button>
+                <Button variant="secondary" icon="external" onClick={handleRun} disabled={!sourceUrl.trim() || busy}>Przetwórz z linku</Button>
               </div>
               <p className="mt-2 text-xs text-muted">Kolejność przetwarzania: sprawdzenie istniejących napisów → import transkryptu → transkrypcja tylko gdy potrzebna. Aplikacja nie pobiera materiałów z platform i nie obchodzi regulaminów.</p>
             </div>
