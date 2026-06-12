@@ -2,6 +2,7 @@
 // Ustawienia — jeden elegancki ekran. Mniej = więcej: jedna decyzja klienta (Silnik),
 // fakty o prywatności, klucz API schowany głęboko dla firm/developerów. Bez zakładek i telemetrii.
 import { Suspense, useEffect, useState } from "react";
+import { BRAND } from "@/lib/brand";
 import { motion } from "framer-motion";
 import PageHeader from "@/components/shell/PageHeader";
 import Button from "@/components/ui/Button";
@@ -43,7 +44,7 @@ function SettingsInner() {
           <div className="mb-5 flex items-center gap-3">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-600 text-white shadow-lift"><Icon name="sparkles" size={22} /></span>
             <div>
-              <h2 className="text-base font-medium text-graphite">Silnik Widźwięk</h2>
+              <h2 className="text-base font-medium text-graphite">Silnik {BRAND.name}</h2>
               <p className="text-xs text-muted">Wybierasz efekt. Resztę dobieramy sami.</p>
             </div>
           </div>
@@ -91,7 +92,7 @@ function SettingsInner() {
               Zaawansowane — własny klucz API <span className="font-normal text-muted">(dla firm i developerów)</span>
             </summary>
             <div className="mt-4 grid gap-3">
-              <p className="text-xs text-muted">Domyślnie nie potrzebujesz klucza — silnik Widźwięk działa bez niego. Klucz to opcja ekspercka; zostaje na Twoim urządzeniu i nie trafia na nasz serwer.</p>
+              <p className="text-xs text-muted">Domyślnie nie potrzebujesz klucza — silnik {BRAND.name} działa bez niego. Klucz to opcja ekspercka; zostaje na Twoim urządzeniu i nie trafia na nasz serwer.</p>
               <label className="grid gap-1.5">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted">Dostawca</span>
                 <select value={provider} onChange={(e) => setProvider(e.target.value as AsrProvider)}

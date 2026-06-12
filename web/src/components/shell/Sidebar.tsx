@@ -1,25 +1,29 @@
 "use client";
-// Cockpit sidebar — większy oficjalny logotyp + realna nawigacja (osobne podstrony /app/*).
+// Cockpit sidebar — logotyp z brand.config + nawigacja (etykiety przez i18n).
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import BrandLogo from "@/components/brand/BrandLogo";
 import Icon, { type IconName } from "@/components/ui/Icon";
 import { StatusDot } from "@/components/ui/Badge";
+import { BRAND } from "@/lib/brand";
+import { useT } from "@/lib/i18n";
 
-const NAV: { href: string; label: string; icon: IconName }[] = [
-  { href: "/app", label: "Przegląd", icon: "grid" },
-  { href: "/app/studio", label: "Studio", icon: "captions" },
-  { href: "/app/plan", label: "Plan i płatności", icon: "card" },
-  { href: "/app/ustawienia", label: "Ustawienia", icon: "settings" },
-];
+const BUILD = "brand-i18n";
 
 export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
   const pathname = usePathname();
+  const t = useT();
+  const NAV: { href: string; label: string; icon: IconName }[] = [
+    { href: "/app", label: t.nav.overview, icon: "grid" },
+    { href: "/app/studio", label: t.nav.studio, icon: "captions" },
+    { href: "/app/plan", label: t.nav.plan, icon: "card" },
+    { href: "/app/ustawienia", label: t.nav.settings, icon: "settings" },
+  ];
   const isActive = (href: string) => (href === "/app" ? pathname === "/app" : href === "/app/studio" ? (pathname.startsWith("/app/studio") || pathname.startsWith("/app/projekty") || pathname.startsWith("/app/skaner")) : pathname.startsWith(href));
   return (
     <aside className="relative hidden w-[248px] shrink-0 flex-col overflow-hidden border-r border-hair/70 bg-white/55 backdrop-blur-xl lg:flex">
-      <div className="px-5 pb-3 pt-6"><Link href="/" aria-label="Widźwięk — strona główna"><BrandLogo width="170" /></Link></div>
+      <div className="px-5 pb-3 pt-6"><Link href="/" aria-label={t.sidebar.home}><BrandLogo width="170" /></Link></div>
 
       <nav className="relative z-10 mt-2 flex-1 px-3">
         {NAV.map((it) => {
@@ -38,14 +42,14 @@ export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
         })}
       </nav>
 
-      <img src="/brand/sygnet.svg" alt="" aria-hidden draggable={false}
+      <img src={BRAND.assets.sygnet} alt="" aria-hidden draggable={false}
         className="pointer-events-none absolute -bottom-6 -left-10 w-[150%] max-w-none opacity-[0.06]" />
 
       <div className="relative z-10 border-t border-hair/70 px-5 py-4">
         <div className="rounded-xl bg-white/60 px-3 py-2.5 ring-1 ring-hair/60">
           <StatusDot tone={workerUp === false ? "err" : workerUp ? "ok" : "neutral"}
-            label={workerUp === false ? "worker offline" : workerUp ? "system online" : "łączenie…"} />
-          <p className="mt-1 text-[11px] text-muted">Widźwięk Pracownia · build <span className="font-mono">no-demo</span></p>
+            label={workerUp === false ? t.status.offline : workerUp ? t.status.online : t.status.connecting} />
+          <p className="mt-1 text-[11px] text-muted">{t.sidebar.build} <span className="font-mono">{BUILD}</span></p>
         </div>
       </div>
     </aside>

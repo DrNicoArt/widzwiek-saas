@@ -2,6 +2,7 @@
 // Raport = dowód zgodności gotowy do druku/PDF (do publikacji albo kontroli).
 // Na ekranie: gauge + pełna lista problemów (co dokładnie poprawić). Druk: chowa nawigację, zostaje raport.
 import { useParams } from "next/navigation";
+import { BRAND } from "@/lib/brand";
 import { motion } from "framer-motion";
 import { useProject } from "@/lib/useProject";
 import WcagReport from "@/components/wcag/WcagReport";
@@ -43,7 +44,7 @@ export default function ProjectRaport() {
       {/* Nagłówek dokumentu — widoczny tylko na druku */}
       <div className="print-only mb-4 border-b border-[#d0d7de] pb-3">
         <div className="flex items-center justify-between">
-          <span className="text-lg font-semibold text-graphite">Widźwięk — Raport zgodności WCAG 2.1 AA</span>
+          <span className="text-lg font-semibold text-graphite">{BRAND.name} — Raport zgodności WCAG 2.1 AA</span>
           <span className="text-sm text-muted">{today}</span>
         </div>
         <p className="mt-1 text-sm text-muted">Materiał: {doc.media.filename} · {(doc.media.duration_ms / 1000 / 60).toFixed(1)} min · język {doc.media.language}</p>

@@ -1,6 +1,7 @@
 // Parser SRT/VTT po stronie klienta -> CaptionDocument (offline, bez AI).
 // Wykrywa mowcow z <v Nazwa>, opisy dzwiekow [..] jako cue typu sound, zachowuje timing.
 import type { CaptionDocument, Cue, Speaker } from "./contract";
+import { BRAND } from "@/lib/brand";
 import { DEFAULT_STYLE } from "./contract";
 import { autoSpeakers } from "./enrich";
 
@@ -71,7 +72,7 @@ export function parseSubtitles(content: string, filename: string): CaptionDocume
   const duration = cues.reduce((mx, c) => Math.max(mx, c.end_ms), 0);
   const built: CaptionDocument = {
     schema_version: "1.0",
-    media: { filename, source_kind: "audio", duration_ms: duration, language: "pl" },
+    media: { filename, source_kind: "audio", duration_ms: duration, language: BRAND.asr.code },
     speakers,
     cues,
     wcag: { target: "WCAG 2.1 AA", compliant: false, generated_at: new Date().toISOString(), stats: { cue_count: cues.length, error_count: 0, warning_count: 0 }, issues: [] },

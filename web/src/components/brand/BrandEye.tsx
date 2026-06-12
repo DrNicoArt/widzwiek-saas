@@ -3,6 +3,7 @@
 // breathe = subtelny oddech (L3). Asset, nie rysowane oko.
 import { motion, useReducedMotion } from "framer-motion";
 import type { CSSProperties } from "react";
+import { BRAND } from "@/lib/brand";
 
 export default function BrandEye({
   width = 40, className, style, breathe = false, decorative = true,
@@ -11,7 +12,7 @@ export default function BrandEye({
   const animate = breathe && !reduce ? { scale: [1, 1.035, 1], opacity: [1, 0.9, 1] } : undefined;
   return (
     <motion.img
-      src="/brand/sygnet.svg" alt={decorative ? "" : "Widźwięk"} aria-hidden={decorative || undefined}
+      src={BRAND.assets.sygnet} alt={decorative ? "" : BRAND.name} aria-hidden={decorative || undefined}
       draggable={false} className={className} style={{ width, height: "auto", ...style }}
       animate={animate} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
     />

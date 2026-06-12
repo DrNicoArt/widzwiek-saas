@@ -2,6 +2,7 @@
 // Model wybierany przez użytkownika (tiny/base/small), pobierany raz z CDN do cache przeglądarki.
 // Audio dekodowane do 16 kHz mono. Dźwięki niewerbalne: AST/AudioSet (real), fallback do heurystyki.
 import type { CaptionDocument, Cue } from "./contract";
+import { BRAND } from "@/lib/brand";
 import { finalizeDoc } from "./wcagClient";
 import { heuristicTurns, ensureDefaultSpeaker } from "./enrich";
 import { analyzeSounds } from "./soundScan";
@@ -57,7 +58,7 @@ export async function transcribeLocally(file: File, onProgress?: ProgressFn): Pr
   onProgress?.({ pct: 0, label: "Transkrypcja w toku (lokalnie, bez API)…" });
   // eslint-disable-next-line
   const out: any = await transcriber(audio, {
-    language: "polish",
+    language: BRAND.asr.whisper,
     task: "transcribe",
     return_timestamps: true,
     chunk_length_s: 30,
@@ -101,7 +102,7 @@ export async function transcribeLocally(file: File, onProgress?: ProgressFn): Pr
   const duration = cues.length ? Math.max(...cues.map((c) => c.end_ms)) : 0;
   const doc: CaptionDocument = {
     schema_version: "1.0",
-    media: { filename: file.name, source_kind: file.type.startsWith("video") ? "video" : "audio", duration_ms: duration, language: "pl" },
+    media: { filename: file.name, source_kind: file.type.startsWith("video") ? "video" : "audio", duration_ms: duration, language: BRAND.asr.code },
     speakers: [], cues,
     wcag: { target: "WCAG 2.1 AA", compliant: false, generated_at: new Date().toISOString(), stats: { cue_count: cues.length, error_count: 0, warning_count: 0 }, issues: [] },
     meta: {

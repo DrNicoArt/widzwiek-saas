@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { BRAND } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Widźwięk — zobacz to, co inni słyszą",
+  title: `${BRAND.name} — ${BRAND.tagline}`,
   description:
-    "Inteligentny system napisów dostępnościowych dla polskiego audio i wideo. SubrosAI.",
+    BRAND.description,
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },

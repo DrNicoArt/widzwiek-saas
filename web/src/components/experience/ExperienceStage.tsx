@@ -3,6 +3,7 @@
 // zgodność → akcja. Auto-play w 1. viewportcie. Oficjalny logotyp (duży) + sygnet (centralny).
 // prefers-reduced-motion → finalny kadr. Lekkie animacje, build stabilny.
 import { useEffect, useState } from "react";
+import { BRAND } from "@/lib/brand";
 import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import BrandLogo from "@/components/brand/BrandLogo";
@@ -140,7 +141,7 @@ export default function ExperienceStage() {
           </motion.div>
         </main>
 
-        <footer className="pb-6 text-center text-xs text-muted">SubrosAI · Widźwięk · inteligentne laboratorium audio</footer>
+        <footer className="pb-6 text-center text-xs text-muted">{`${BRAND.org} · ${BRAND.name} · inteligentne laboratorium audio`}</footer>
       </div>
     </motion.div>
   );

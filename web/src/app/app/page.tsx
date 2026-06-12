@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { SAMPLE_PROJECTS, SAMPLE_STATS, type SampleProject } from "@/lib/sampleData";
 import { SAMPLE_DOC } from "@/lib/sampleDoc";
 import { listJobs } from "@/lib/api";
+import { BRAND } from "@/lib/brand";
 import type { Job } from "@/lib/contract";
 import PageHeader from "@/components/shell/PageHeader";
 import StatTile from "@/components/ui/StatTile";
@@ -44,7 +45,7 @@ export default function Przeglad() {
   }, []);
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader icon="grid" title="Przegląd" desc="Pulpit Pracowni Widźwięk — szybki start, statystyki i ostatnie projekty." />
+      <PageHeader icon="grid" title="Przegląd" desc={`Pulpit Pracowni ${BRAND.name} — szybki start, statystyki i ostatnie projekty.`} />
 
       {/* Szybki start */}
       <Tilt className="mb-8" max={4}>

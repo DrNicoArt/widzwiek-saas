@@ -3,6 +3,7 @@
 // ElevenLabs (Scribe), Deepgram (Nova). Każdy adapter zwraca znormalizowane segmenty -> wspólny
 // CaptionDocument -> klientowy silnik WCAG. Klucz nie opuszcza urządzenia poza wywołaniem do dostawcy.
 import type { CaptionDocument, Cue } from "./contract";
+import { BRAND } from "@/lib/brand";
 import { finalizeDoc } from "./wcagClient";
 import { heuristicTurns, ensureDefaultSpeaker } from "./enrich";
 import { analyzeSounds } from "./soundScan";
@@ -41,7 +42,7 @@ function segmentsFromWords(words: { text: string; start: number; end: number }[]
 
 async function callOpenai(file: File, key: string): Promise<Seg[]> {
   const form = new FormData();
-  form.append("file", file); form.append("model", "whisper-1"); form.append("language", "pl"); form.append("response_format", "verbose_json");
+  form.append("file", file); form.append("model", "whisper-1"); form.append("language", BRAND.asr.code); form.append("response_format", "verbose_json");
   const r = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form });
   if (!r.ok) err(r.status, await r.text().catch(() => ""));
   const d = await r.json();
@@ -64,7 +65,7 @@ async function callEleven(file: File, key: string): Promise<Seg[]> {
 }
 
 async function callDeepgram(file: File, key: string): Promise<Seg[]> {
-  const url = "https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&utterances=true&language=pl";
+  const url = `https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&utterances=true&language=${BRAND.asr.code}`;
   const r = await fetch(url, { method: "POST", headers: { Authorization: `Token ${key}`, "Content-Type": file.type || "application/octet-stream" }, body: file });
   if (!r.ok) err(r.status, await r.text().catch(() => ""));
   const d = await r.json();
@@ -112,7 +113,7 @@ export async function transcribeWithProvider(file: File, choice: AsrChoice): Pro
   const duration = cues.length ? Math.max(...cues.map((c) => c.end_ms)) : 0;
   const doc: CaptionDocument = {
     schema_version: "1.0",
-    media: { filename: file.name, source_kind: file.type.startsWith("video") ? "video" : "audio", duration_ms: duration, language: "pl" },
+    media: { filename: file.name, source_kind: file.type.startsWith("video") ? "video" : "audio", duration_ms: duration, language: BRAND.asr.code },
     speakers: [], cues,
     wcag: { target: "WCAG 2.1 AA", compliant: false, generated_at: new Date().toISOString(), stats: { cue_count: cues.length, error_count: 0, warning_count: 0 }, issues: [] },
     meta: { generated_at: new Date().toISOString(), pipeline: { asr: choice.provider, diarization: "none", sound_events: soundProvider }, decision: { strategy: "automatic", transcript_source: "cloud-asr", no_api_first: false, fallback_used: false, fallbacks: [], notes: [`Transkrypcja w przeglądarce (${choice.provider}), klucz użytkownika.`] } },
