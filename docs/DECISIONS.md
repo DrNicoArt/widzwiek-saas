@@ -42,6 +42,47 @@ wartość produktu (raport TAK/NIE). **Status:** przyjęte.
 **Powód:** demo musi pokazać CAŁY przepływ produktu (łącznie z wartością raportu) przed integracją AI.
 **Status:** przyjęte.
 
+## ADR-008 — No-API-first + Model B (provider-agnostic)
+**Decyzja:** domyślnie AI działa bez kluczy API (w przeglądarce), a płatny tryb idzie przez Model B:
+użytkownik wybiera TRYB/jakość (nie dostawcę), Widźwięk opłaca providerów i dolicza marżę.
+**Powód:** prywatność i zerowy koszt na wejściu; ukrycie dostawcy chroni marżę, lock-in i wartość firmy;
+user nie musi rozumieć OpenAI/Deepgram. Rozszerza ADR-004 (orkiestrator zostaje warstwą wyboru ścieżki).
+**Alternatywy:** BYO-key jako główny flow (odrzucone — zabija marżę i wartość). **Status:** przyjęte.
+
+## ADR-009 — Konta i płatności bez własnego hosta (usługi zarządzane)
+**Decyzja:** auth + baza przez managed (Supabase lub Clerk), płatności przez Stripe/Paddle, webhooki jako
+funkcje serverless na Vercelu. Bez stawiania i utrzymywania własnego serwera na tym etapie.
+**Powód:** realne konta/billing wymagają backendu, ale nie własnej maszyny; managed daje EU region, RLS,
+VAT (Paddle MoR) i szybki start. Aktualizuje ADR-006 (na PoC nadal brak — to ścieżka do MVP).
+**Alternatywy:** własny serwer auth (odrzucone — koszt/ryzyko), tylko localStorage (atrapa). **Status:** przyjęte (plan MVP).
+
+## ADR-010 — Warstwa danych: localStorage → user-scoped Postgres + RLS
+**Decyzja:** dziś materiały w localStorage (tryb przeglądarkowy); docelowo per-użytkownik w Postgresie
+(Supabase) z Row-Level Security, region UE, polityką retencji i twardym usuwaniem.
+**Powód:** konta mają sens, gdy dane są per-user i dostępne między urządzeniami; RODO/instytucje wymagają
+retencji, prawa do usunięcia i izolacji najemców. Seam już jest: abstrakcja `api.ts` + `org_id` w workerze.
+**Alternatywy:** trzymanie w kliencie (brak multi-device, brak zgodności). **Status:** przyjęte (kierunek).
+
+## ADR-011 — Przenośność hostingu (Vercel front + worker/VPS), bez lock-inu
+**Decyzja:** front/demo na Vercelu, ciężkie AI na osobnym workerze (VPS/GPU); aplikacja jako standardowy
+Next SSR (`output: standalone` + Docker), bez prymitywów Vercela (KV/Blob/Edge Config) jako jedynej warstwy.
+**Powód:** Vercel nie udźwignie GPU/długiego przetwarzania; trzymanie się standardu czyni przeprowadzkę na
+VPS operacyjną (TLS, proces, CI), nie architektoniczną. **Alternatywy:** all-in na Vercel (niewykonalne dla AI).
+**Status:** przyjęte.
+
+## ADR-012 — brand.config + i18n + język ASR jako parametr (pod EU/rebranding)
+**Decyzja:** jedno źródło marki (`lib/brand.ts`: nazwa/logo/tagline/domena/asr/locale), lekka warstwa i18n
+(`lib/i18n`, typowany katalog + `useT`), język materiału przez `BRAND.asr` (nie zaszyte „pl"), kolory jako
+tokeny Tailwind. **Powód:** wejście na rynek EU i rebranding/white-label mają być zmianą konfiguracji, nie
+przepisywaniem; WCAG 2.1 AA = standard EU, Whisper jest wielojęzyczny. **Alternatywy:** literały rozsiane po
+kodzie (drogi rebranding). **Status:** przyjęte.
+
+## ADR-013 — Usunięcie warstwy „demo/mock" z UI; flaga IS_BROWSER_MODE
+**Decyzja:** żadnego słowa „demo"/„mock" w UI i kodzie; tryb przeglądarkowy sterowany `IS_BROWSER_MODE`
+(env `NEXT_PUBLIC_BROWSER_MODE`, z fallbackiem na starą `NEXT_PUBLIC_STATIC_DEMO`); dane przykładowe tylko
+jako fallback, gdy user nie ma materiałów. **Powód:** produkt ma wyglądać jak produkt, nie jak zabawka.
+Aktualizuje ADR-007 (mock pipeline → „dane przykładowe" jako świadomy fallback). **Status:** przyjęte.
+
 ## Otwarte kwestie (TBD)
 - Alternatywni providerzy ASR/API/hosted model — decyzja po pomiarze jakości/kosztu; self-hosted/lokalne
   modele tylko jako later/dev eksperyment infrastrukturalny, nie strategia produktu.
