@@ -107,6 +107,7 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
   const warnCount = issues.filter((i) => i.severity === "warning").length;
   const activePreset = STYLE_PRESETS.find((p) => sameStyle(p.style, style))?.key ?? "custom";
   const soundRows = rows.filter((r) => r.kind === "sound");
+  const speechCountOf = (id: string) => rows.filter((r) => r.kind === "speech" && r.speaker_id === id).length;
 
   const patch = (id: string, p: Partial<Row>) => setRows((r) => r.map((x) => (x.id === id ? { ...x, ...p } : x)));
   const setStyleK = <K extends keyof CaptionStyle>(k: K, v: CaptionStyle[K]) => setStyle((s) => ({ ...s, [k]: v }));
@@ -351,6 +352,7 @@ export default function CaptionsEditor({ jobId, doc, onSaved }: { jobId: string;
                 <div className="hidden items-center gap-1 sm:flex">
                   {PRESETS.slice(0, 6).map((c) => <button key={c} type="button" aria-label={`kolor ${c}`} onClick={() => setSpeakers((all) => all.map((x) => (x.id === s.id ? { ...x, color: c } : x)))} className={`h-5 w-5 rounded-full ring-2 ${toHex(s.color) === c ? "ring-brand-600" : "ring-transparent"}`} style={{ background: c, border: "1px solid #ccc" }} />)}
                 </div>
+                <span className="tnum text-xs text-muted">{speechCountOf(s.id)} wypowiedzi</span>
                 <Badge tone={cb.tone} icon={cb.tone === "ok" ? "check" : "alert"}>{cb.label}</Badge>
                 {speakers.length > 1 && (
                   <select defaultValue="" onChange={(e) => { mergeSpeaker(s.id, e.target.value); e.currentTarget.value = ""; }} aria-label="Scal w innego mówcę" title="Scal w innego mówcę" className="focusring rounded-lg border border-hair bg-white px-2 py-1 text-[11px] text-muted">

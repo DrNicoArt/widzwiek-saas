@@ -41,8 +41,7 @@ export default function ProjectLayout({ children }: { children: ReactNode }) {
 
   const tabs: { seg: string; label: string; icon: IconName; count?: number }[] = [
     { seg: "", label: "Podsumowanie", icon: "grid" },
-    { seg: "napisy", label: "Napisy", icon: "captions", count: doc?.cues.length },
-    { seg: "mowcy", label: "Mówcy i dźwięki", icon: "users", count: doc?.speakers.length },
+    { seg: "napisy", label: "Napisy, mówcy i dźwięki", icon: "captions", count: doc?.cues.length },
     { seg: "raport", label: "Raport", icon: "shield", count: wcag ? wcag.stats.error_count + wcag.stats.warning_count : undefined },
     { seg: "eksporty", label: "Eksport", icon: "download" },
   ];

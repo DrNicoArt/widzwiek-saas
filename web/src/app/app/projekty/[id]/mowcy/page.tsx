@@ -1,24 +1,7 @@
-"use client";
-import { useParams } from "next/navigation";
-import { motion } from "framer-motion";
-import { useProject } from "@/lib/useProject";
-import SpeakersSounds from "@/components/result/SpeakersSounds";
-import Icon from "@/components/ui/Icon";
-import { fadeUp, inView } from "@/lib/motion";
+// Zakładka „Mówcy i dźwięki" została scalona z edytorem (Napisy, mówcy i dźwięki).
+// Stare linki/zakładki przekierowujemy, aby nie zwracały 404.
+import { redirect } from "next/navigation";
 
-export default function ProjectMowcy() {
-  const { id } = useParams<{ id: string }>();
-  const { loading, doc } = useProject(id);
-  if (loading || !doc) return (
-    <div className="rounded-2xl border border-hair/70 bg-white/80 p-6 text-center shadow-card">
-      <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-brand-50 text-brand-700"><Icon name="clock" size={24} /></span>
-      <p className="text-sm text-muted">{loading ? "Wczytywanie…" : "Mówcy i dźwięki pojawią się po przetwarzaniu."}</p>
-    </div>
-  );
-  return (
-    <motion.div initial="hidden" whileInView="show" viewport={inView} variants={fadeUp} className="space-y-4">
-      <p className="text-sm text-muted">To odróżnia captions od subtitles (WCAG 1.2.2): identyfikacja mówców i opisy dźwięków niewerbalnych. W demo dane mock; realne providery to placeholdery.</p>
-      <SpeakersSounds doc={doc} />
-    </motion.div>
-  );
+export default function MowcyRedirect({ params }: { params: { id: string } }) {
+  redirect(`/app/projekty/${params.id}/napisy`);
 }
