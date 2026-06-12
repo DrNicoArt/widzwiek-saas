@@ -23,13 +23,12 @@ import {
 } from "@/lib/orchestration";
 
 type Mode = "mock" | "api";
-type SectionId = "ogolne" | "strategia" | "zrodla" | "ai" | "dzwieki" | "platnosci" | "bezpieczenstwo" | "developer";
+type SectionId = "ogolne" | "strategia" | "zrodla" | "ai" | "dzwieki" | "bezpieczenstwo" | "developer";
 
 const SECTIONS: { id: SectionId; label: string; icon: IconName }[] = [
   { id: "ogolne", label: "Ogólne", icon: "settings" },
   { id: "ai", label: "Silnik AI", icon: "mic" },
   { id: "dzwieki", label: "Dźwięki niewerbalne", icon: "wave" },
-  { id: "platnosci", label: "Plan i płatności", icon: "card" },
   { id: "bezpieczenstwo", label: "Bezpieczeństwo", icon: "shield" },
 ];
 const DEV_SECTION = { id: "developer" as SectionId, label: "Developer", icon: "plug" as IconName };
@@ -169,12 +168,10 @@ function UstawieniaInner() {
           <div className="flex flex-wrap gap-2">{statusBadges}</div>
 
           {section === "ogolne" && (
-            <Card title="Ogólne" desc="Widźwięk to SaaS do captions dostępnościowych, nie ręczny panel wyboru kilkunastu providerów.">
+            <Card title="Ogólne" desc="Podstawowe informacje o Twoim koncie i trybie pracy.">
               <div className="space-y-2">
-                <ReadonlyField label="Produkt" value="Widźwięk — captions/WCAG/audio intelligence" />
-                <ReadonlyField label="Model pracy" value="Orkiestrator przetwarzania" />
-                <ReadonlyField label="Domyślny tryb" value="Automatyczna strategia" />
-                <ReadonlyField label="Demo" value="mock bez zewnętrznych API" />
+                <ReadonlyField label="Produkt" value="Widźwięk — napisy zgodne z WCAG" />
+                <ReadonlyField label="Tryb" value="Demo w przeglądarce (bez serwera)" />
               </div>
             </Card>
           )}
@@ -198,17 +195,6 @@ function UstawieniaInner() {
                   ))}
                 </div>
                 <p className="mt-3 text-xs text-muted">Ceny orientacyjne (TBD) — finalne stawki ustalimy przy uruchomieniu rozliczeń. Rozliczamy „minuty zgodności WCAG”, nie dostawcę. Pole klucza API zostaje wyłącznie dla firm/developerów w trybie zaawansowanym.</p>
-              </Card>
-              <Card title="Źródła transkryptu i napisów" desc="Ważniejsze niż sam ASR: najtańsza ścieżka często zaczyna się od gotowych napisów. Orkiestrator sprawdza źródła w tej kolejności — nie wybierasz dostawców ręcznie.">
-                <details className="rounded-xl border border-hair/60 bg-white px-3 py-2.5">
-                  <summary className="cursor-pointer text-sm font-medium text-graphite">Zaawansowane: kolejność kaskadowa</summary>
-                  <ol className="mt-3 space-y-1.5 text-xs text-muted">
-                    <li>1. Sprawdź gotowe napisy lub auto captions z platformy.</li>
-                    <li>2. Użyj importu SRT/VTT/TXT albo wklejonego transkryptu.</li>
-                    <li>3. Jeśli trzeba, pobierz/wyciągnij audio jako etap techniczny.</li>
-                    <li>4. Uruchom ASR i alignment tylko wtedy, gdy nie ma tańszego źródła.</li>
-                  </ol>
-                </details>
               </Card>
             </div>
           )}
@@ -248,21 +234,12 @@ function UstawieniaInner() {
             </div>
           )}
 
-          {section === "platnosci" && (
-            <Card title="Plan, kredyty i rozliczenia" desc="Billing jest mock/placeholder, ale język UI to plan, kredyty, faktury i konto instytucjonalne.">
-              <p className="text-sm text-muted">Metody płatności są opisane jako doświadczenie użytkownika, nie jako techniczne integracje.</p>
-              <Link href="/app/plan" className="focusring mt-3 inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700">
-                <Icon name="card" size={17} /> Otwórz Plan i płatności
-              </Link>
-            </Card>
-          )}
-
           {section === "bezpieczenstwo" && (
-            <Card title="Bezpieczeństwo" desc="Sekrety i dostawcy są konfiguracją backendową, nie głównym językiem produktu.">
+            <Card title="Bezpieczeństwo i prywatność" desc="Co dzieje się z Twoimi plikami.">
               <div className="space-y-2">
-                <ReadonlyField label="Klucze w repo" value="nigdy" />
-                <ReadonlyField label="Live API" value="tylko po kluczu w środowisku" />
-                <ReadonlyField label="Auth / storage / produkcja" value="later / production hardening" />
+                <ReadonlyField label="Przetwarzanie" value="W Twojej przeglądarce — plik nie opuszcza urządzenia (tryb demo)" />
+                <ReadonlyField label="Twoje materiały" value="Zapisane lokalnie w tej przeglądarce" />
+                <ReadonlyField label="Wersja serwerowa" value="Retencja, region UE i twarde usuwanie — wkrótce" />
               </div>
             </Card>
           )}
