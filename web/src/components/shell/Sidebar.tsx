@@ -8,8 +8,9 @@ import Icon, { type IconName } from "@/components/ui/Icon";
 import { StatusDot } from "@/components/ui/Badge";
 import { BRAND } from "@/lib/brand";
 import { useT } from "@/lib/i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 
-const BUILD = "eu-lang";
+const BUILD = "i18n-switch";
 
 export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
   const pathname = usePathname();
@@ -50,6 +51,7 @@ export default function Sidebar({ workerUp }: { workerUp: boolean | null }) {
           <StatusDot tone={workerUp === false ? "err" : workerUp ? "ok" : "neutral"}
             label={workerUp === false ? t.status.offline : workerUp ? t.status.online : t.status.connecting} />
           <p className="mt-1 text-[11px] text-muted">{t.sidebar.build} <span className="font-mono">{BUILD}</span></p>
+          <div className="mt-2"><LanguageSwitcher /></div>
         </div>
       </div>
     </aside>
