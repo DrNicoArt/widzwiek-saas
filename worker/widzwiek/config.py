@@ -52,6 +52,8 @@ class Settings:
     prefer_platform_captions: bool = os.getenv("WIDZWIEK_PREFER_PLATFORM_CAPTIONS", "1") != "0"
     # Gdy URL nie ma napisów: pobierz audio i wykonaj transkrypcję (ASR). 1=wł (domyślnie).
     url_asr_fallback: bool = os.getenv("WIDZWIEK_URL_ASR_FALLBACK", "1") != "0"
+    # Analiza migotania (WCAG 2.3.1) dla wideo, gdy dostępny ffmpeg. 1=wł (domyślnie).
+    flash_detection: bool = os.getenv("WIDZWIEK_FLASH_DETECTION", "1") != "0"
     enable_sound_events: bool = os.getenv("WIDZWIEK_ENABLE_SOUND_EVENTS", "1") != "0"
 
     admin_token: str = os.getenv("WIDZWIEK_ADMIN_TOKEN", "")  # gdy ustawiony: /api/config wymaga naglowka X-Admin-Token

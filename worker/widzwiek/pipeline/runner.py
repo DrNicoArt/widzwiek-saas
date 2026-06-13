@@ -15,11 +15,14 @@ from ..contracts import (
     DocumentMeta,
     MediaInfo,
     PipelineMeta,
+    Severity,
     SourceKind,
+    WcagIssue,
 )
 from ..wcag import validate
 from . import formatter
 from .audio import AUDIO_EXT, ensure_audio, probe_duration_ms
+from .flash import analyze_video_flashes
 from .mock_data import MOCK_DURATION_MS
 from .orchestrator import ProcessingDecision, apply_quality
 from .providers import select_providers
@@ -121,6 +124,26 @@ def run_pipeline(filename: str, audio_path: Optional[str] = None) -> CaptionDocu
     )
     # 6) Walidacja WCAG
     doc.wcag = validate(doc)
+
+    # 6a) Detekcja migotania (WCAG 2.3.1) — tylko wideo, gdy włączone i jest plik źródłowy.
+    if settings.flash_detection and media.source_kind == SourceKind.video and audio_path:
+        try:
+            fr = analyze_video_flashes(audio_path)
+            if fr.analyzed and not fr.passed:
+                where = f" (ok. {fr.worst_time_s:.0f}s)" if fr.worst_time_s is not None else ""
+                doc.wcag.issues.append(WcagIssue(
+                    code="FLASH_2_3_1", severity=Severity.error,
+                    message=(f"Wykryto ryzyko migotania{where}: ~{fr.flashes_per_sec:.1f} błysków/s "
+                             "(WCAG 2.3.1, próg 3/s). Przesiewowo — zweryfikuj fragment."),
+                ))
+                doc.wcag.stats.error_count += 1
+                doc.wcag.compliant = doc.wcag.stats.error_count == 0
+                decision.notes.append("Analiza migotania (2.3.1): wykryto ryzyko — dodano do raportu.")
+            elif fr.analyzed:
+                decision.notes.append("Analiza migotania (2.3.1): brak ryzyka.")
+        except Exception as exc:  # noqa: BLE001
+            decision.notes.append(f"Analiza migotania pominięta: {exc}")
+
     return apply_quality(doc, decision, segments, diar_result, sounds)
 
 
