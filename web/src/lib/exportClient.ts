@@ -60,3 +60,34 @@ export function downloadText(filename: string, content: string, mime: string) {
   a.href = url; a.download = filename; document.body.appendChild(a); a.click();
   a.remove(); URL.revokeObjectURL(url);
 }
+
+// Transkrypt opisowy (descriptive transcript) — pełny tekstowy odpowiednik materiału:
+// mowa z identyfikacją mówców + istotne dźwięki niewerbalne, z timestampami. WCAG 1.2.x.
+export function toDescriptiveTranscript(doc: CaptionDocument): string {
+  const byId = Object.fromEntries(doc.speakers.map((s) => [s.id, s]));
+  const mmss = (ms: number) => {
+    const t = Math.max(0, Math.round(ms / 1000));
+    return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+  };
+  const title = doc.media.filename.replace(/\.[^.]+$/, "");
+  const speakers = doc.speakers.map((s) => s.label).join(", ") || "—";
+  const verdict = doc.wcag?.compliant ? "TAK" : "wymaga poprawek";
+  const head = [
+    `# ${title} — transkrypt opisowy`,
+    ``,
+    `Język: ${doc.media.language || "—"} · Czas: ${mmss(doc.media.duration_ms || 0)} · Mówcy: ${speakers}`,
+    `Zgodność WCAG 2.1 AA: ${verdict}`,
+    ``,
+    `> Pełny tekstowy odpowiednik materiału — mowa z identyfikacją mówców oraz istotne dźwięki niewerbalne (WCAG 1.2.x).`,
+    ``,
+    `---`,
+    ``,
+  ].join("\n");
+  const body = doc.cues.map((c) => {
+    const t = mmss(c.start_ms);
+    if (c.kind === "sound") return `[${t}] _${c.text}_`;
+    const sp = c.speaker_id ? byId[c.speaker_id] : undefined;
+    return `[${t}] **${sp?.label ?? "Mówca"}:** ${c.text}`;
+  }).join("\n\n");
+  return head + body + "\n";
+}

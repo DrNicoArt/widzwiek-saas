@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useProject } from "@/lib/useProject";
 import { exportUrl } from "@/lib/api";
+import { downloadText, toDescriptiveTranscript } from "@/lib/exportClient";
 import ExportButtons from "@/components/ExportButtons";
 import Icon from "@/components/ui/Icon";
 import { fadeUp, stagger, inView } from "@/lib/motion";
@@ -49,6 +50,12 @@ export default function ProjectEksporty() {
       ) : (
         <ExportButtons doc={doc} />
       )}
+      <button onClick={() => downloadText(`${doc.media.filename.replace(/\.[^.]+$/, "")}-transkrypt-opisowy.md`, toDescriptiveTranscript(doc), "text/markdown")}
+        className="focusring flex w-full items-center gap-3 rounded-2xl border border-hair/70 bg-white/85 p-4 text-left shadow-card transition-shadow hover:shadow-lift">
+        <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-50 text-brand-700"><Icon name="file" size={18} /></span>
+        <div className="flex-1"><p className="text-sm font-medium text-graphite">Transkrypt opisowy (.md)</p><p className="text-xs text-muted">Pełny tekstowy odpowiednik: mowa + mówcy + dźwięki. Alternatywa tekstowa dla czytników (WCAG 1.2.x).</p></div>
+        <Icon name="download" size={18} className="text-brand-600" />
+      </button>
       <div className="flex items-center gap-3 rounded-2xl border border-hair/60 bg-white/60 p-4 opacity-80">
         <span className="grid h-9 w-9 place-items-center rounded-lg bg-slate-100 text-muted"><Icon name="file" size={18} /></span>
         <div className="flex-1"><p className="text-sm font-medium text-graphite">Raport PDF (wkrótce)</p><p className="text-xs text-muted">Certyfikat zgodności WCAG do pobrania — ważny dla instytucji i B2B.</p></div>
