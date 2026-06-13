@@ -15,6 +15,7 @@ import { transcribeWithProvider } from "@/lib/cloudAsr";
 import { transcribeLocally, type LocalProgress } from "@/lib/localAsr";
 import { getAsrModel } from "@/lib/asrModel";
 import { ENGINE_MODES, getEngineMode, setEngineMode, type EngineMode } from "@/lib/engineMode";
+import { ASR_LANGUAGES, getAsrLang, setAsrLang } from "@/lib/lang";
 import { getUserAsr } from "@/lib/userKey";
 import { DEFAULT_PROCESSING_DECISION } from "@/lib/orchestration";
 import { useWorkerUp } from "@/components/shell/AppShell";
@@ -100,6 +101,7 @@ function StudioInner() {
   const [localProg, setLocalProg] = useState<LocalProgress | null>(null);
   const [asrModel, setAsrModelState] = useState<string>("");
   const [engineMode, setEngineModeState] = useState<EngineMode>("auto");
+  const [asrLang, setAsrLangState] = useState("auto");
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const busy = phase === "uploading" || phase === "processing";
@@ -138,7 +140,7 @@ function StudioInner() {
 
   // wejście z ?sample=1 (np. z banera offline / dashboardu)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { setHasKey(!!getUserAsr()); setAsrModelState(getAsrModel()); setEngineModeState(getEngineMode()); listJobs().then(setMyJobs).catch(() => {}); if (params.get("sample") === "1") runSample(); }, []);
+  useEffect(() => { setHasKey(!!getUserAsr()); setAsrModelState(getAsrModel()); setEngineModeState(getEngineMode()); setAsrLangState(getAsrLang().code); listJobs().then(setMyJobs).catch(() => {}); if (params.get("sample") === "1") runSample(); }, []);
 
   async function runCloud(f: File) {
     setError(null); setSample(false); setPhase("processing");
@@ -299,6 +301,13 @@ function StudioInner() {
                   </button>
                 ))}
               </div>
+              <label className="inline-flex items-center gap-1.5 text-xs text-muted" title="Język materiału do transkrypcji — Whisper rozpoznaje wiele języków EU; 'Automatycznie' wykryje sam">
+                Język
+                <select value={asrLang} onChange={(e) => { setAsrLang(e.target.value); setAsrLangState(e.target.value); }}
+                  className="focusring rounded-lg border border-hair bg-white px-2 py-1 text-xs text-graphite">
+                  {ASR_LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+                </select>
+              </label>
               {workerUp === false && <span className="text-xs text-muted">Silnik przetwarzania jest offline — użyj <button onClick={runSample} className="font-medium text-brand-700 underline">przykładowego materiału</button> albo uruchom worker w środowisku dev.</span>}
               <span className="text-xs text-muted">Transkrypcja liczy się w Twojej przeglądarce — plik nie opuszcza urządzenia. Model i orientacyjny cennik ustawisz w <Link href="/app/ustawienia" className="font-medium text-brand-700 underline">Ustawieniach → Silnik AI</Link>.</span>
             </div>
